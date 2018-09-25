@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<opencv_storage>
+<video_type>2</video_type>
+<filter>6</filter>
+<window_size>15</window_size>
+<bb_path>/home/swhants/Documentos/Codigo-TLD/dataset/exemplo/01-Light_video00001/bb.txt</bb_path>
+<video_path>/home/swhants/Documentos/Codigo-TLD/dataset/exemplo/01-Light_video00001/lista.list</video_path>
+<init_path>/home/swhants/Documentos/Codigo-TLD/dataset/exemplo/01-Light_video00001.ann.txt</init_path>
+<gt_path>/home/swhants/Documentos/Codigo-TLD/dataset/exemplo/01-Light_video00001.ann</gt_path>
+<detect>1</detect>
+<track>1</track>
+<detect_failure>1</detect_failure>
+<show>1</show>
+<repeat_video>0</repeat_video>
+<print_status>1</print_status>
+<valid>0</valid>
+<conf>0</conf>
