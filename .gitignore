@@ -1,0 +1,9 @@
+dataset/
+parametros/
+TLD/bin/
+TLD/commom/vl/
+obj/
+vlfeat/
+TLD.cbp
+TLD.depend
+TLD.layout

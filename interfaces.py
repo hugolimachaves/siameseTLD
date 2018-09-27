@@ -2,16 +2,31 @@ import numpy as np
 from ctypes import *
 from sklearn.neighbors import KNeighborsClassifier
 
+FRAME_2 = 2
+FRAME_5 = 5
+MAX_SIZE_OF_CONST_ARRAY = 100 # tamanho maximo do vetor de tamanho constante
+VOID_VALUE = -1
+BB_SIZE_COORDINATES = 4
 shared_library = CDLL('TLD/bin/Debug/libTLD.so')
 
-positive_obj_model    = []
-negative_obj_model    = []
-feature_pos_obj_model = []
-feature_neg_obj_model = []
 
-SIZE_ARRAY = 32
-LAST_ADDED = -1
-SIZE_DESCRIPTOR = 255
+
+
+
+class ObjectModel():
+    
+    SIZE_ARRAY = 32
+    LAST_ADDED = -1
+    SIZE_DESCRIPTOR = 255
+    positive_obj_model    = []
+    negative_obj_model    = []
+    feature_pos_obj_model = []
+    feature_neg_obj_model = []
+
+objModel = ObjectModel() 
+
+
+
 
 def convertSimilatiry(siameseDistance):
     return 1 / (siameseDistance+1) # retorna a distancia no TLD
@@ -24,8 +39,10 @@ def getLength(element): # verifica o tamanho total de elementos em uma estrutura
 def getDescriptor(bb):
     descriptor = []
     #TODO Estamos colocando apenas um place holder. A funcao depende da analise do tracker siameseFC no python
-    for _ in range(SIZE_DESCRIPTOR):
-        descriptor.append(float(np.random.randn()))
+    #for _ in range(SIZE_DESCRIPTOR):
+    
+    descriptor = np.random.randn(1,objModel.SIZE_DESCRIPTOR)
+    print('descriptor'.center(100,'#'),descriptor)
     return descriptor
 
 # passa  as deep Features dos candidatos para o presente frame conjuntamente
@@ -35,28 +52,31 @@ def distCandidatesToTheModel(deep_features_candidates, isPositive=True):
     features = []
 
     if isPositive: # modelo positivo do object model
-        positiveLabel = [1 for i in feature_pos_obj_model]
-        labels = positiveLabel
+        positiveLabel = [1 for i in objModel.feature_pos_obj_model]
+        labels = np.asarray(positiveLabel)
         #mod 
 
-        #features = feature_pos_obj_model    
+        features = np.asarray(objModel.feature_pos_obj_model)
         #~mod
     
     else: # modelo negativo do object model
-        negativeLabel = [0 for i in feature_neg_obj_model] 
-        labels = negativeLabel
+        negativeLabel = [0 for i in objModel.feature_neg_obj_model] 
+        labels = np.asarray(negativeLabel)
         #mod
-        #features = feature_neg_obj_model
+        features = np.asarray(objModel.feature_neg_obj_model)
     
+    print('feature_neg_obj_model: ', objModel.feature_neg_obj_model)
+    print('feature_pos_obj_model: ', objModel.feature_pos_obj_model)
     
     print(features)
     knn_1 = KNeighborsClassifier(n_neighbors=1)
 
     #list_features = []
     #list_features.append(features)
-    list_features = deep_features_candidates
-    print('list_features len printando:',len(list_features))
-    knn_1.fit(list_features, labels)
+    #list_features = deep_features_candidates
+    print('features len printando:',len(features))
+    print('Dimensao de features: ', features.shape ,' Dimensao de label', labels.shape)
+    knn_1.fit(features, labels)
     
     distances = []
     positions = []
@@ -75,38 +95,41 @@ def distCandidatesToTheModel(deep_features_candidates, isPositive=True):
 def detSimilarity(candidates, bb_tracker, is_neg_empty=False, is_pos_empty=False, is_candidates_empty=False, is_bb_tracker_empty=False):
     # sera utilizado - (sao globais): positive_obj_model, negative_obj_model
     if(not is_neg_empty):
-        for bb in negative_obj_model[LAST_ADDED]:
+        for bb in objModel.negative_obj_model[objModel.LAST_ADDED]:
             descriptor = getDescriptor(bb)
-            feature_neg_obj_model.append(descriptor) # o tamanho e equivalente ao numero de descritores negativos
+            objModel.feature_neg_obj_model.append(descriptor) # o tamanho e equivalente ao numero de descritores negativos
 
-        assert(getLength(feature_pos_obj_model) == getLength(positive_obj_model)), 'o tamanho do object Model difere do tamanho dos descritores'
+        assert(getLength(objModel.feature_neg_obj_model) == getLength(objModel.negative_obj_model)), 'o tamanho do object Model difere do tamanho dos descritores'
 
     if(not is_pos_empty):
-        for bb in positive_obj_model[LAST_ADDED]:
+        for bb in objModel.positive_obj_model[objModel.LAST_ADDED]:
             descriptor = getDescriptor(bb)
-            feature_pos_obj_model.append(descriptor)  # o tamanho e equivalente ao numero de descritores positivos
+            objModel.feature_pos_obj_model.append(descriptor)  # o tamanho e equivalente ao numero de descritores positivos
 
-        assert(getLength(feature_neg_obj_model) == getLength(negative_obj_model)), 'o tamanho do object Model difere do tamanho dos descritores'
+        assert(getLength(objModel.feature_pos_obj_model) == getLength(objModel.positive_obj_model)), 'o tamanho do object Model difere do tamanho dos descritores'
 
     if(not is_candidates_empty):
-        #deep_features_candidates = []
+        deep_features_candidates = []
         for bb in candidates:
             #TODO fazer o descritor
             descriptor = getDescriptor(bb)
-            descriptor = [[i] for i in descriptor]
+            '''
             print('descritor'.center(50,'*'))
             print('O descritor provisorio e: ', descriptor)
             print('~descritor'.center(50,'*'))
-        deep_features_candidates = descriptor
-        print('Info deep_features_candidates: ',  deep_features_candidates, '\n tipo: ', type(deep_features_candidates) )
+            '''
+            deep_features_candidates.append(descriptor)
+        deep_features_candidates = np.asarray(deep_features_candidates)
+        #print('Info deep_features_candidates: ',  deep_features_candidates, '\n tipo: ', type(deep_features_candidates) )
         positive_distances_candidates = distCandidatesToTheModel(deep_features_candidates, isPositive=True)
         negative_distances_candidates = distCandidatesToTheModel(deep_features_candidates, isPositive=False)
 
     if(not is_bb_tracker_empty):
+        feature_tracker = []
         for bb in bb_tracker:
             descriptor = getDescriptor(bb)
             feature_tracker.append(descriptor)
-
+        feature_tracker =  np.asarray(feature_tracker)
         positive_distances_tracker = distCandidatesToTheModel(feature_tracker, isPositive=True)
         negative_distances_tracker = distCandidatesToTheModel(feature_tracker, isPositive=False)
 
@@ -132,7 +155,7 @@ def interface1(frame):
     Vaviavel necessaria para garantir o processamento do mesmo frame.
     '''
 
-    arry_size = 100 # Example
+    
 
     parameters_path = "/home/hugo/Documents/Mestrado/codigoKevyn2/dataset/exemplo/01-Light_video00001/parameters.yml"
     parameters_path = parameters_path.encode('utf-8')
@@ -144,16 +167,16 @@ def interface1(frame):
     size_negative   = c_int()
     size_bb_tracker = c_int()
 
-    array_bb_candidates         = [-1] * arry_size
-    array_object_model_positive = [-1] * arry_size
-    array_object_model_negative = [-1] * arry_size
+    array_bb_candidates         = [VOID_VALUE] * MAX_SIZE_OF_CONST_ARRAY # sintaxe para gerar uma lista de tamanho MAX_SIZE_OF_CONST_ARRAY, com todos elementos de mesmo valor
+    array_object_model_positive = [VOID_VALUE] * MAX_SIZE_OF_CONST_ARRAY
+    array_object_model_negative = [VOID_VALUE] * MAX_SIZE_OF_CONST_ARRAY
 
-    array_bb_candidates         = (c_float * arry_size) (*array_bb_candidates)
-    array_object_model_positive = (c_float * arry_size) (*array_object_model_positive)
-    array_object_model_negative = (c_float * arry_size) (*array_object_model_negative)
+    array_bb_candidates         = (c_float * MAX_SIZE_OF_CONST_ARRAY) (*array_bb_candidates)
+    array_object_model_positive = (c_float * MAX_SIZE_OF_CONST_ARRAY) (*array_object_model_positive)
+    array_object_model_negative = (c_float * MAX_SIZE_OF_CONST_ARRAY) (*array_object_model_negative)
 
-    array_bb_tracker = [-1] * 4
-    array_bb_tracker = (c_float * 4) (*array_bb_tracker)
+    array_bb_tracker = [VOID_VALUE] * BB_SIZE_COORDINATES
+    array_bb_tracker = (c_float * BB_SIZE_COORDINATES) (*array_bb_tracker)
 
     print(type(parameters_path))
     shared_library.initializer_TLD(parameters_path)
@@ -178,15 +201,19 @@ def interface1(frame):
         for i in range(size_positive.value):
             bb_pos.append(array_object_model_positive[i])
 
-            if(i%4==0 and i is not 0):
+            if(i%BB_SIZE_COORDINATES==0 and i is not 0):
                 bb_pos.append(frame)
                 bb_list.append(bb_pos)
                 bb_pos = []
                 print()
                 
+            print('bb_list: ',bb_list)
             print(str(array_object_model_positive[i])+' ',end='')
-
-        positive_obj_model.append(bb_list)
+        bb_pos.append(frame)
+        bb_list.append(bb_pos)
+        bb_pos = []
+        objModel.positive_obj_model.append(bb_list)
+        #print('aproximadamente linha 195 - positive_obj_model:', bb_list)
         is_pos_empty = False
 
     if(size_negative.value is not 0):
@@ -196,15 +223,17 @@ def interface1(frame):
         for i in range(size_negative.value):
             bb_pos.append(array_object_model_negative[i])
 
-            if(i%4==0 and i is not 0):
+            if(i%BB_SIZE_COORDINATES==0 and i is not 0):
                 bb_pos.append(frame)
                 bb_list.append(bb_pos)
                 bb_pos = []
                 print()
                 
             print(str(array_object_model_negative[i])+' ',end='')
-
-        negative_obj_model.append(bb_list)
+        bb_pos.append(frame)
+        bb_list.append(bb_pos)
+        bb_pos = []
+        objModel.negative_obj_model.append(bb_list)
         is_neg_empty = False
 
     if(size_candidates.value is not 0):
@@ -214,14 +243,16 @@ def interface1(frame):
         for i in range(size_candidates.value):
             bb_pos.append(array_bb_candidates[i])
 
-            if(i%4==0 and i is not 0):
+            if(i%BB_SIZE_COORDINATES==0 and i is not 0):
                 bb_pos.append(frame)
                 bb_list.append(bb_pos)
                 bb_pos = []
                 print()
                 
             print(str(array_bb_candidates[i])+' ',end='')
-
+        bb_pos.append(frame)
+        bb_list.append(bb_pos)
+        bb_pos = []
         candidates.append(bb_list)
         is_candidates_empty = False
 
@@ -236,7 +267,7 @@ def interface1(frame):
         is_bb_tracker_empty = False
 
     
-    print('\nFrame de entrada: '+ str(frame)+ ' Frame de retorno: ' + str(retorno_frame.value))
+    print('\nFrame de entrada: ' + str(frame) + ' Frame de retorno: ' + str(retorno_frame.value))
     assert (frame == retorno_frame.value), "Conflito nos frames"
 
     # candidates[ N ][ 5 ]
@@ -264,14 +295,13 @@ def interface1(frame):
     shared_library.TLD_function_2(byref(retorno_frame))
 
     assert (frame == retorno_frame.value), "Conflito nos frames"
-    
 
-
-
-    return lista1
-
-interface1(2)
+for frame in range(FRAME_2,FRAME_5):
+    interface1(frame)
  
+
+
+ #by: Hugo, antes de 09/2018
 #'deepDescriptor' eh o descritor que sera passado para o codigo C. eh um descritor de 128/256 floats.
 def interface2(deepDescriptor,frame):
 
