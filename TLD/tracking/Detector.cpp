@@ -11,9 +11,9 @@
 //Geração de amostras
 #define DEFAULT_PATCH_SIZE  15		//Patches normalizados = 15x15
 #define NUM_POS_SAMPLE		10		//Número de amostras positivas extraídas da vizinhança
-#define NUM_WARPS_INIT	  20		//Número de amostras geradas sinteticamente no treino
-#define NUM_WARPS_UPDATE   	10		//Número de amostras geradas sinteticamente no retreino
 #define NUM_NEG_SAMPLE		100		//Número máximo de amostras negativas extraídas da vizinhança
+#define NUM_WARPS_INIT		20		//Número de amostras geradas sinteticamente no treino
+#define NUM_WARPS_UPDATE   	10		//Número de amostras geradas sinteticamente no retreino
 #define GOOD_WINDOW_TH		0.6		//Overlap mínimo para amostra positiva
 #define BAD_WINDOW_TH		0.2		//Overlap máximo para amostra negativa
 
@@ -37,6 +37,9 @@
 #define NN_TEST(r_conf) (r_conf > NN_THETA)
 #define NN_TEST_MARGIN_P(r_conf) (r_conf - NN_THETA <= NN_LAMBDA) //Fracos positivos e negativos
 #define NN_TEST_MARGIN_N(r_conf) (NN_THETA - r_conf < NN_LAMBDA) //Fracos negativos e positivos
+
+// Kevyn
+#define SIZE_BAD 10
 
 typedef int Feature[4]; 		//Par de pontos a ser comparado (x1, y1, x2, y2)
 
@@ -136,11 +139,11 @@ double modelSimilatiryRetrain(vector<ModelSample> model, Mat pattern, int &isin,
 
 	isin = -1;
 
-    max_sim = similaridade[0];
-    max_pos = 0;
+	max_sim = similaridade[0];
+	max_pos = 0;
 
 	for(i = 1; i < (int)model.size(); i++){
-        sim = similaridade[i];
+		sim = similaridade[i];
 		if(sim > max_sim){
 			max_sim = sim;
 			max_pos = i;
@@ -165,11 +168,11 @@ double modelSimilatiryTrain(vector<ModelSample> model, Mat pattern, int &isin){
 
 	isin = -1;
 
-    max_sim = (*(model.begin())).similarity(pattern);
-    max_pos = 0;
+	max_sim = (*(model.begin())).similarity(pattern);
+	max_pos = 0;
 
 	for(sample = model.begin()+1; sample != model.end(); sample++, i++){
-        sim = (*sample).similarity(pattern);
+		sim = (*sample).similarity(pattern);
 		if(sim > max_sim){
 			max_sim = sim;
 			max_pos = i;
@@ -221,7 +224,7 @@ double relativeSimilarityRetrain(Mat pattern, int &isin_p, int &isin_n, float *s
 }
 
 void fastSimilarity(Mat nn_img, double &relative_sim, double &conservative_sim, int &isin_p, int &isin_n, int cont_candidates,
-                    float *similaridade_positiva_candidates, float *similaridade_negativa_candidates){
+					float *similaridade_positiva_candidates, float *similaridade_negativa_candidates){
 	int i = 0, max_pos = -1,
 		pos_size = ceil(object_model[1].size()/2.);
 	double 	pos_sim = 0.,
@@ -447,7 +450,9 @@ int getCode(Mat img, int fern_index){
 
 //Seleciona janelas proximas e distantes (se negative = true). Calcula envoltórias das amostras positivas.
 //Retorna no máximo NUM_POS_SAMPLE amostras positivas e todas as negativas encontradas, ambas ordenadas pelo overlap.
-void setOverlapingWindows(BoundingBox position, bool negative = true){
+void setOverlapingWindows(BoundingBox position, float *array_good_windows, int *size_good_windows,
+           				  float *array_good_windows_hull, int *size_good_windows_hull, bool negative=true){
+
 	good_windows.clear();
 	bad_windows.clear();
 
@@ -474,7 +479,7 @@ void setOverlapingWindows(BoundingBox position, bool negative = true){
 			index = overlap_vector[i].index;
 			good_windows.push_back(scanning_windows[index]);
 
-			//Menor envoltoria convexa retangular das bounding boxes selecionadas
+			//Menor envoltoria convexa retangular das bounding boxes selecionadas [HELENA <<< 2018] (QUE ENGLOBA TODAS AS OUTRAS [HUGO 2018-09-25])
 			if(scanning_windows[index][0] < good_windows_hull[0])
 				good_windows_hull[0] = scanning_windows[index][0];
 			if(scanning_windows[index][1] < good_windows_hull[1])
@@ -497,6 +502,41 @@ void setOverlapingWindows(BoundingBox position, bool negative = true){
 			else break;
 		}
 	}
+
+	/// Kevyn
+	*size_good_windows_hull = 4;
+	*size_good_windows = 4 * good_windows.size();
+
+	int obj, i=0;
+
+    //TODO Selecao aleatoria
+
+    if(std::isnan(good_windows_hull[2])||std::isnan(good_windows_hull[0])){
+    	array_good_windows_hull[0] = good_windows_hull[0] / 2;
+    	array_good_windows_hull[2] = 0.;
+    }
+	else{
+		array_good_windows_hull[0] = good_windows_hull[0] + (good_windows_hull[2] - good_windows_hull[0] + 1) / 2;
+	}
+
+	if(std::isnan(good_windows_hull[3])||std::isnan(good_windows_hull[1])){
+    	array_good_windows_hull[1] = good_windows_hull[1] / 2;
+    	array_good_windows_hull[3] = 0.;
+	}
+	else{
+    	array_good_windows_hull[1] = good_windows_hull[1] + (good_windows_hull[3] - good_windows_hull[1] + 1) / 2;
+	}
+
+    obj = 0;
+	for(int i=0; i<*size_good_windows; i+=4){
+		array_good_windows[i]   = good_windows[obj][0] + widthBB (good_windows[obj]) / 2;
+		array_good_windows[i+1] = good_windows[obj][1] + heightBB(good_windows[obj]) / 2;
+		array_good_windows[i+2] = widthBB (good_windows[obj]);
+		array_good_windows[i+3] = heightBB(good_windows[obj]);
+
+        obj += 1;
+	}
+	///~Kevyn
 
 	free(overlap_vector);
 }
@@ -733,7 +773,8 @@ void addSample(Mat normalized_sample, int label, int isin){
 }
 
 //Treina nearest neighbor. Se ens_filter = true, utiliza para o treinamento apenas amostras que passam pelo comitê
-void nnTrain(bool show, bool ens_filter = false){
+void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
+			 float *array_object_model_negative, int *size_negative, bool ens_filter = false){
 	int g_size = good_samples.size(),
 		b_size = bad_samples.size(),
 		isin_p, isin_n, //ignorados
@@ -783,6 +824,7 @@ void nnTrain(bool show, bool ens_filter = false){
 					object_model[1].push_back(*sample);
 					///NOTE: minhas alterações
 					unnorm_object_model[1].push_back(*unnorm_sample);
+					std::cout << "PUSH BACK POSITIVE" << std::endl;
 					///end
 				}
 				else{
@@ -795,6 +837,7 @@ void nnTrain(bool show, bool ens_filter = false){
 			}
 		}
 		else{
+			std::cout << "ENTROU ELSE" << std::endl;
 			sample = bad_samples.begin() + (*index) - g_size;
 			///NOTE: minhas alterações
 			 unnorm_sample = bad_windows.begin() + (*index) - g_size;
@@ -806,17 +849,63 @@ void nnTrain(bool show, bool ens_filter = false){
 				object_model[0].push_back(*sample);
 				///NOTE: minhas alterações
 				unnorm_object_model[0].push_back(*unnorm_sample);
+				std::cout << "PUSH BACK NEGATIVE" << std::endl;
 				///end
 				if(show)  addSample((*sample).image, 0, -1);
 			}
 		}
 	}
 
+	int size_aux_negative = 0, size_aux_positive = 0;
+
+	if(*size_negative == -1){
+		*size_negative = 4 * unnorm_object_model[0].size();
+	}
+	else{
+		size_aux_negative = *size_negative;
+		*size_negative += 4 * unnorm_object_model[0].size();
+	}
+
+	if(*size_positive == -1){
+		*size_positive = 4 * unnorm_object_model[1].size();
+	}
+	else{
+		size_aux_positive = *size_positive;
+		*size_positive += 4 * unnorm_object_model[1].size();
+	}
+
+	int obj;
+
+	obj = 0;
+	for(int i=size_aux_negative; i<(*size_negative-size_aux_negative); i+=4){
+		array_object_model_negative[i]   = unnorm_object_model[0][obj][0] + widthBB (unnorm_object_model[0][obj]) / 2;
+		array_object_model_negative[i+1] = unnorm_object_model[0][obj][1] + heightBB(unnorm_object_model[0][obj]) / 2;
+		array_object_model_negative[i+2] = widthBB (unnorm_object_model[0][obj]);
+		array_object_model_negative[i+3] = heightBB(unnorm_object_model[0][obj]);
+
+		obj += 1;
+	}
+
+	obj = 0;
+	for(int i=size_aux_positive; i<(*size_positive-size_aux_positive); i+=4){
+		array_object_model_positive[i]   = unnorm_object_model[1][obj][0] + widthBB (unnorm_object_model[1][obj]) / 2;
+		array_object_model_positive[i+1] = unnorm_object_model[1][obj][1] + heightBB(unnorm_object_model[1][obj]) / 2;
+		array_object_model_positive[i+2] = widthBB (unnorm_object_model[1][obj]);
+		array_object_model_positive[i+3] = heightBB(unnorm_object_model[1][obj]);
+
+		obj += 1;
+	}
+
 	indexes.clear();
 }
 
 //Treina detector
-void Train(Mat frame, BoundingBox &position, bool show){
+void Train(Mat frame, BoundingBox &position, bool show,
+		   float *array_object_model_positive, int *size_positive,
+		   float *array_object_model_negative, int *size_negative,
+           float *array_good_windows, int *size_good_windows,
+           float *array_good_windows_hull, int *size_good_windows_hull){
+
 	clock_t start_g = clock();
 	DetClear();
 
@@ -830,7 +919,9 @@ void Train(Mat frame, BoundingBox &position, bool show){
 
 	scanningWindows(frame_width, frame_height, bb_width, bb_height);
 	setFeatures();
-	setOverlapingWindows(position);
+	setOverlapingWindows(position,
+                         array_good_windows, size_good_windows,
+                         array_good_windows_hull, size_good_windows_hull);
 
 	if(good_windows.empty() || bad_windows.empty()){
 		DetClear();
@@ -853,7 +944,8 @@ void Train(Mat frame, BoundingBox &position, bool show){
 	setPositiveSamples(frame, NUM_WARPS_INIT);
 	setNegativeSamples(frame); //Etapa mais lenta.
 	ensTrain();
-	nnTrain(show, true);
+	nnTrain(show, array_object_model_positive, size_positive,
+			array_object_model_negative, size_negative, true);
 
 	good_windows.clear();
 	bad_windows.clear();
@@ -960,7 +1052,11 @@ void nnRetrain(bool show, float *similaridade_positiva_bb_tracker, float *simila
 	indexes.clear();
 }
 
-bool Retrain(Mat frame, BoundingBox &position, float *similaridade_positiva_bb_tracker, float *similaridade_negativa_bb_tracker, bool show){
+bool Retrain(Mat frame, BoundingBox &position, float *similaridade_positiva_bb_tracker,
+			 float *similaridade_negativa_bb_tracker, bool show,
+             float *array_good_windows, int *size_good_windows,
+             float *array_good_windows_hull, int *size_good_windows_hull){
+
 	clock_t start_g = clock();
 
 	float 	frame_width = frame.size().width,
@@ -1014,7 +1110,8 @@ bool Retrain(Mat frame, BoundingBox &position, float *similaridade_positiva_bb_t
 	}
 	free(var);
 
-	setOverlapingWindows(position);
+	setOverlapingWindows(position, array_good_windows, size_good_windows,
+             			 array_good_windows_hull, size_good_windows_hull);
 
 	if(good_windows.empty() || bad_windows.empty()){
 		t_answer.image.release();
@@ -1253,7 +1350,7 @@ void ensembleClassifier(float *array_bb_candidates, int *size_candidates, float 
 
 //Step 3: NN classifier
 void nearestNeighbor(vector<BoundingBox> &positions, vector<double> &conf, int frame_number, /*string strSaidaTemplates, */
-                     float *similaridade_positiva_candidates, float *similaridade_negativa_candidates){
+					 float *similaridade_positiva_candidates, float *similaridade_negativa_candidates){
 	vector<Candidate>::iterator candidate;
 	int isin_p, isin_n; //ignorados
 	Mat view;
@@ -1261,10 +1358,10 @@ void nearestNeighbor(vector<BoundingBox> &positions, vector<double> &conf, int f
 	static int nNegativeNPositive[2] = {0,0};
 	/// end
 
-    int cont_candidates = 0;
+	int cont_candidates = 0;
 	for(candidate = candidates.begin(); candidate != candidates.end(); candidate++){
 		fastSimilarity((*candidate).nn_img, (*candidate).r_sim, (*candidate).c_sim, isin_p, isin_n, cont_candidates,
-                        similaridade_positiva_candidates, similaridade_negativa_candidates);
+						similaridade_positiva_candidates, similaridade_negativa_candidates);
 		cont_candidates++;
 	}
 
@@ -1278,7 +1375,7 @@ void nearestNeighbor(vector<BoundingBox> &positions, vector<double> &conf, int f
 		positions.push_back(scanning_windows[(*candidate).scanning_windows_index]); //Adiciona cópia
 	}
 
-    /*
+	/*
 	///NOTE: minhas alterações
 	if(ESCRITA){
 			vector<BoundingBox>::iterator unnorm_model_it;
@@ -1295,7 +1392,7 @@ void nearestNeighbor(vector<BoundingBox> &positions, vector<double> &conf, int f
 }
 
 //Retorna bounding boxes que contém o objeto em 'positions' e suas respectivas similaridades conservativas em 'd_conf'
-bool Detect_part_1(Mat frame, int frame_number, /*string saidaTemplates,*/
+bool Detect_part_1(Mat frame, int frame_number,/* string saidaTemplates,*/
 				   float *array_bb_candidates, int *size_candidates,
 				   float *array_object_model_positive, int *size_positive,
 				   float *array_object_model_negative, int *size_negative){
@@ -1345,13 +1442,13 @@ bool Detect_part_1(Mat frame, int frame_number, /*string saidaTemplates,*/
 	setCandidates(frame);
 	start_t = clock();
 	ensembleClassifier(array_bb_candidates, size_candidates,
-                       array_object_model_positive, size_positive,
-                       array_object_model_negative, size_negative);
+					   array_object_model_positive, size_positive,
+					   array_object_model_negative, size_negative);
 	end_t = clock();
 	return true;
 }
 
-bool Detect_part_2(Mat frame, vector<BoundingBox> &detector_positions, vector<double> &d_conf, int frame_number, /*string saidaTemplates, */
+bool Detect_part_2(Mat frame, vector<BoundingBox> &detector_positions, vector<double> &d_conf, int frame_number,
 				   float *similaridade_positiva_candidates, float *similaridade_negativa_candidates){
 
 	detector_positions.clear();
@@ -1380,7 +1477,7 @@ bool Detect_part_2(Mat frame, vector<BoundingBox> &detector_positions, vector<do
 
 	start_t = clock();
 	nearestNeighbor(detector_positions, d_conf, frame_number, /*saidaTemplates, */
-                    similaridade_positiva_candidates, similaridade_negativa_candidates);
+					similaridade_positiva_candidates, similaridade_negativa_candidates);
 	end_t = clock();
 
 	if(_DEBUG_DETECTOR){

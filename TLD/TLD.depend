@@ -201,11 +201,11 @@
 1522965204 source:/home/swhants/Área de Trabalho/TLD-Kevyn/tracking/Tracker.cpp
 	"Tracker.hpp"
 
-1522965204 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/common/sift_utils.cpp
+1522965204 source:/home/swhants/Documentos/Codigo-TLD/TLD/common/sift_utils.cpp
 	"sift_utils.hpp"
 	<math.h>
 
-1522965204 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/common/sift_utils.hpp
+1522965204 /home/swhants/Documentos/Codigo-TLD/TLD/common/sift_utils.hpp
 	<opencv2/highgui/highgui.hpp>
 	"vl/generic.h"
 	"vl/sift.h"
@@ -214,7 +214,7 @@
 	"vl/getopt_long.h"
 	"utils.hpp"
 
-1522965204 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/common/vl/generic.h
+1522965204 /home/swhants/Documentos/Codigo-TLD/TLD/common/vl/generic.h
 	"host.h"
 	"random.h"
 	<stdlib.h>
@@ -222,50 +222,50 @@
 	<time.h>
 	<assert.h>
 
-1522965204 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/common/vl/host.h
+1522965204 /home/swhants/Documentos/Codigo-TLD/TLD/common/vl/host.h
 
-1522965204 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/common/vl/random.h
+1522965204 /home/swhants/Documentos/Codigo-TLD/TLD/common/vl/random.h
 	"host.h"
 
-1522965204 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/common/vl/sift.h
+1522965204 /home/swhants/Documentos/Codigo-TLD/TLD/common/vl/sift.h
 	<stdio.h>
 	"generic.h"
 
-1522965204 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/common/vl/stringop.h
+1522965204 /home/swhants/Documentos/Codigo-TLD/TLD/common/vl/stringop.h
 	"generic.h"
 
-1522965204 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/common/vl/pgm.h
+1522965204 /home/swhants/Documentos/Codigo-TLD/TLD/common/vl/pgm.h
 	"generic.h"
 	"mathop.h"
 	<stdio.h>
 
-1522965204 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/common/vl/mathop.h
+1522965204 /home/swhants/Documentos/Codigo-TLD/TLD/common/vl/mathop.h
 	"generic.h"
 	<math.h>
 	<float.h>
 
-1522965204 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/common/vl/getopt_long.h
+1522965204 /home/swhants/Documentos/Codigo-TLD/TLD/common/vl/getopt_long.h
 	"generic.h"
 
-1536018262 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/common/utils.hpp
+1536018262 /home/swhants/Documentos/Codigo-TLD/TLD/common/utils.hpp
 	<opencv2/highgui/highgui.hpp>
 	<opencv2/imgproc/imgproc.hpp>
 	"opencv2/legacy/legacy.hpp"
 	<iostream>
 
-1531346628 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/common/utils.cpp
+1531346628 source:/home/swhants/Documentos/Codigo-TLD/TLD/common/utils.cpp
 	"utils.hpp"
 	<math.h>
 	<fstream>
 
-1537294526 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/main.c
+1538064775 source:/home/swhants/Documentos/Codigo-TLD/TLD/main.c
 	"main.h"
 
-1537294526 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/main.h
+1538063762 /home/swhants/Documentos/Codigo-TLD/TLD/main.h
 	"tracking/TLD.hpp"
 	<stdlib.h>
 
-1537294528 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/TLD.hpp
+1538063969 /home/swhants/Documentos/Codigo-TLD/TLD/tracking/TLD.hpp
 	<iostream>
 	<opencv2/highgui/highgui.hpp>
 	<opencv2/imgproc/imgproc.hpp>
@@ -274,33 +274,33 @@
 	"Detector.hpp"
 	"Integrator_Learning.hpp"
 
-1431041828 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Tracker.hpp
+1431041828 /home/swhants/Documentos/Codigo-TLD/TLD/tracking/Tracker.hpp
 	<opencv2/video/tracking.hpp>
 	"../common/utils.hpp"
 
-1537295892 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Detector.hpp
+1538064609 /home/swhants/Documentos/Codigo-TLD/TLD/tracking/Detector.hpp
 	<opencv2/highgui/highgui.hpp>
 	<opencv2/imgproc/imgproc.hpp>
 	<opencv2/legacy/legacy.hpp>
 	"../common/utils.hpp"
 
-1537213068 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Integrator_Learning.hpp
+1538064723 /home/swhants/Documentos/Codigo-TLD/TLD/tracking/Integrator_Learning.hpp
 	<opencv2/highgui/highgui.hpp>
 	<opencv2/imgproc/imgproc.hpp>
 	"../common/utils.hpp"
 	"../common/sift_utils.hpp"
 	"Detector.hpp"
 
-1537296926 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Detector.cpp
+1538069743 source:/home/swhants/Documentos/Codigo-TLD/TLD/tracking/Detector.cpp
 	"Detector.hpp"
 
-1537296702 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Integrator_Learning.cpp
+1537296702 source:/home/swhants/Documentos/Codigo-TLD/TLD/tracking/Integrator_Learning.cpp
 	"Integrator_Learning.hpp"
 
-1537294540 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/TLD.cpp
+1537978704 source:/home/swhants/Documentos/Codigo-TLD/TLD/tracking/TLD.cpp
 	"TLD.hpp"
 	<fstream>
 
-1537216256 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Tracker.cpp
+1537216255 source:/home/swhants/Documentos/Codigo-TLD/TLD/tracking/Tracker.cpp
 	"Tracker.hpp"
 

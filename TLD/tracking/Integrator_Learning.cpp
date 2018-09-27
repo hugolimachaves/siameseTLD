@@ -463,7 +463,9 @@ int mostConfident2(Mat frame, vector<BoundingBox> c_answers, double &max_d_conf,
 
 bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detector_positions, vector<double> d_conf,
 						bool tracked, bool detected, BoundingBox &output, Mat &object, bool enable_detect,
-						float *similaridade_positiva_bb_tracker, float *similaridade_negativa_bb_tracker){
+						float *similaridade_positiva_bb_tracker, float *similaridade_negativa_bb_tracker,
+			            float *array_good_windows, int *size_good_windows,
+			            float *array_good_windows_hull, int *size_good_windows_hull){
 	static bool tracker_valid = false;
 	t++;
 	output[0] = output[1] = output[2] = output[3] = NAN;
@@ -550,7 +552,8 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 	}
 
 	if(tracker_valid && enable_detect){
-		tracker_valid = Retrain(frame, t_bb, similaridade_positiva_bb_tracker, similaridade_negativa_bb_tracker, show);
+		tracker_valid = Retrain(frame, t_bb, similaridade_positiva_bb_tracker, similaridade_negativa_bb_tracker, show,
+                                array_good_windows, size_good_windows, array_good_windows_hull, size_good_windows_hull);
 	}
 
 	if(_DEBUG_IL){

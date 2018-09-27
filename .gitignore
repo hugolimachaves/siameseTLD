@@ -4,6 +4,6 @@ TLD/bin/
 TLD/commom/vl/
 obj/
 vlfeat/
-TLD.cbp
-TLD.depend
-TLD.layout
+TLD/TLD.cbp
+TLD/TLD.depend
+TLD/TLD.layout
