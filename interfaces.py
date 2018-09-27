@@ -1,8 +1,13 @@
 import numpy as np
 from ctypes import *
 from sklearn.neighbors import KNeighborsClassifier
+import os
 
 shared_library = CDLL('TLD/bin/Debug/libTLD.so')
+
+SIZE_ARRAY = 32
+LAST_ADDED = -1
+SIZE_DESCRIPTOR = 255
 
 bad_windows  = []
 good_windows = []
@@ -12,9 +17,24 @@ negative_obj_model	= []
 feature_pos_obj_model = []
 feature_neg_obj_model = []
 
-SIZE_ARRAY = 32
-LAST_ADDED = -1
-SIZE_DESCRIPTOR = 255
+# good_windows_hull[ N ][ 5 ]
+#   - N: Numero de bb no frame
+#   - 5: (Centro_X, Centro_Y, Width, Height, Frame_Number)
+
+# positive_obj_model[ P ][ N ][ 5 ]
+#   - P: Numero de frames que retornaram bb ate o momento
+#   - N: Numero de bb do frame no p-esimo frame
+#   - 5: (Centro_X, Centro_Y, Width, Height, Frame_Number)
+
+# negative_obj_model[ P ][ N ][ 5 ]
+#   - P: Numero de frames que retornaram bb ate o momento
+#   - N: Numero de bb do frame no p-esimo frame
+#   - 5: (Centro_X, Centro_Y, Width, Height, Frame_Number)
+
+# good_windows[ P ][ N ][ 5 ]
+#   - P: Numero de frames que retornaram bb ate o momento
+#   - N: Numero de bb do frame no p-esimo frame
+#   - 5: (Centro_X, Centro_Y, Width, Height, Frame_Number)
 
 def convertSimilatiry(siameseDistance):
 	return 1 / (siameseDistance+1) # retorna a distancia no TLD
@@ -146,27 +166,27 @@ def init_interface(frame=2):
 	HULL_SIZE = 4
 	WINDOW_SIZE = 40 # Example
 	OBJECT_MODEL_SIZE = 400 # Example
-
-	parameters_path = "/home/swhants/Documentos/Codigo-TLD/dataset/exemplo/01-Light_video00001/parameters.yml"
+	#print("Caminho atual e:",)
+	parameters_path = os.getcwd() + "/dataset/exemplo/01-Light_video00001/parameters.yml"
 	parameters_path = parameters_path.encode('utf-8')
 
-	retorno_frame = c_int()
+	retorno_frame = c_int() # numero do frame atual
 
-	size_negative = c_int(0)
-	size_positive = c_int(0)
-	size_bad_windows  = c_int(0)
-	size_good_windows = c_int(0)
-	size_good_windows_hull = c_int(0)
+	size_negative = c_int(0) # tamanho do vetor array objectModel negativo
+	size_positive = c_int(0) # tamanho do vetor array objectModel positivo
+	size_good_windows = c_int(0) # tamanho do vetor array good windows
+	size_good_windows_hull = c_int(0) # tamanho do vetor array good_windows_hull (que e sempre 4)
 
-	array_good_windows          = [-1] * WINDOW_SIZE
-	array_good_windows_hull     = [-1] * HULL_SIZE
-	array_object_model_negative = [-1] * OBJECT_MODEL_SIZE
-	array_object_model_positive = [-1] * OBJECT_MODEL_SIZE
+	array_good_windows          = [-1] * WINDOW_SIZE # placeholders
+	array_good_windows_hull     = [-1] * HULL_SIZE # placeholders
+	array_object_model_negative = [-1] * OBJECT_MODEL_SIZE # placeholders
+	array_object_model_positive = [-1] * OBJECT_MODEL_SIZE # placeholders
 
-	array_good_windows 			= (c_float * WINDOW_SIZE) (*array_good_windows)
+	# fazendo a alocacao dos vetores, (*array_good_windows) --> posicao de memoria do vetor
+	array_good_windows 			= (c_float * WINDOW_SIZE) (*array_good_windows) 
 	array_good_windows_hull     = (c_float * 4) (*array_good_windows_hull)
-	array_object_model_negative = (c_float * OBJECT_MODEL_SIZE) (*array_object_model_negative)
-	array_object_model_positive = (c_float * OBJECT_MODEL_SIZE) (*array_object_model_positive)
+	array_object_model_negative = (c_float * OBJECT_MODEL_SIZE) (*array_object_model_negative) 
+	array_object_model_positive = (c_float * OBJECT_MODEL_SIZE) (*array_object_model_positive) 
 
 	shared_library.initializer_TLD(parameters_path, byref(retorno_frame), 
 								   array_object_model_positive, byref(size_positive), 
@@ -177,13 +197,17 @@ def init_interface(frame=2):
 	print('\nFrame de entrada: '+ str(frame)+ ' Frame de retorno: ' + str(retorno_frame.value) + '\n')
 	assert (frame == retorno_frame.value), "Conflito nos frames"
 
-	is_neg_empty  = True
-	is_pos_empty  = True
-	is_bad_empty  = True
-	is_good_empty = True
+	is_neg_empty        = True
+	is_pos_empty        = True
+	is_good_empty       = True
+	is_good_hull_empty  = True
+
+
+
+
 
 	print('Size Positive: ' + str(size_positive.value))
-	if(size_positive.value is not 0 and size_positive.value is not -1):
+	if(size_positive.value is not 0):
 		print(' Os valores do object model ++ '.center(70,'*'))
 		bb_list = []
 		bb_pos = []
@@ -206,7 +230,7 @@ def init_interface(frame=2):
 		is_pos_empty = False
 
 	print('\n\n\nSize Negative: ' + str(size_negative.value))
-	if(size_negative.value is not 0 and size_negative.value is not -1):
+	if(size_negative.value is not 0):
 		print(' Os valores do object model -- '.center(70,'*'))
 		bb_list = []
 		bb_pos = []
@@ -263,10 +287,11 @@ def init_interface(frame=2):
 		bb_pos.append(frame)
 
 		good_windows_hull.append(bb_pos)
-		is_bad_empty = False
+		is_good_hull_empty = False
 
 def TLD(frame):
-	arry_size = 100 # Example
+	
+	ARRAY_SIZE = 100 # Example
 
 	retorno_frame = c_int()
 
@@ -275,13 +300,13 @@ def TLD(frame):
 	size_negative   = c_int()
 	size_bb_tracker = c_int()
 
-	array_bb_candidates		 = [-1] * arry_size
-	array_object_model_positive = [-1] * arry_size
-	array_object_model_negative = [-1] * arry_size
+	array_bb_candidates		 = [-1] * ARRAY_SIZE
+	array_object_model_positive = [-1] * ARRAY_SIZE
+	array_object_model_negative = [-1] * ARRAY_SIZE
 
-	array_bb_candidates		 = (c_float * arry_size) (*array_bb_candidates)
-	array_object_model_positive = (c_float * arry_size) (*array_object_model_positive)
-	array_object_model_negative = (c_float * arry_size) (*array_object_model_negative)
+	array_bb_candidates		 = (c_float * ARRAY_SIZE) (*array_bb_candidates)
+	array_object_model_positive = (c_float * ARRAY_SIZE) (*array_object_model_positive)
+	array_object_model_negative = (c_float * ARRAY_SIZE) (*array_object_model_negative)
 
 	array_bb_tracker = [-1] * 4
 	array_bb_tracker = (c_float * 4) (*array_bb_tracker)
@@ -306,7 +331,7 @@ def TLD(frame):
 	print('Size Positive: ' + str(size_positive.value))
 	if(size_positive.value is not 0):
 		print(' Os valores do object model ++ '.center(70,'*'))
-		bb_list = []
+		bb_list = [] # contem todas as listas de bb
 		bb_pos = []
 		for i in range(size_positive.value):
 			bb_pos.append(array_object_model_positive[i])
@@ -316,13 +341,14 @@ def TLD(frame):
 				bb_list.append(bb_pos)
 				bb_pos = []
 				
-			print(str(array_object_model_positive[i])+' ',end='')
+			print(str(array_object_model_positive[i])+' ',end='') # BB para cada frame
 
+		# sao executadas N vezes o iterador i. A ultima vez nao e executada no loop e sim logo abaixo
 		bb_pos.append(frame)
 		bb_list.append(bb_pos)
 		bb_pos = []
 
-		positive_obj_model.append(bb_list)
+		positive_obj_model.append(bb_list) # todos o BB dos object Model postivo ate o momento
 		is_pos_empty = False
 
 	print('\n\n')
@@ -341,7 +367,7 @@ def TLD(frame):
 				print()
 				
 			print(str(array_object_model_negative[i])+' ',end='')
-
+		# sao executadas N vezes o iterador i. A ultima vez nao e executada no loop e sim logo abaixo
 		bb_pos.append(frame)
 		bb_list.append(bb_pos)
 		bb_pos = []
@@ -364,7 +390,7 @@ def TLD(frame):
 				print()
 				
 			print(str(array_bb_candidates[i])+' ',end='')
-
+		# sao executadas N vezes o iterador i. A ultima vez nao e executada no loop e sim logo abaixo
 		bb_pos.append(frame)
 		bb_list.append(bb_pos)
 		bb_pos = []
@@ -372,6 +398,7 @@ def TLD(frame):
 		candidates.append(bb_list)
 		is_candidates_empty = False
 
+	# BB de referencia do tracker
 	if(size_bb_tracker.value is not 0):
 		print('\n\n')
 		print(' Os valores das bb tracker '.center(70,'*'))
@@ -390,16 +417,6 @@ def TLD(frame):
 
 	# candidates[ N ][ 5 ]
 	#   - N: Numero de bb no frame
-	#   - 5: (Centro_X, Centro_Y, Width, Height, Frame_Number)
-
-	# positive_obj_model[ P ][ N ][ 5 ]
-	#   - P: Numero de frames que retornaram bb ate o momento
-	#   - N: Numero de bb do frame no p-esimo frame
-	#   - 5: (Centro_X, Centro_Y, Width, Height, Frame_Number)
-
-	# negative_obj_model[ P ][ N ][ 5 ]
-	#   - P: Numero de frames que retornaram bb ate o momento
-	#   - N: Numero de bb do frame no p-esimo frame
 	#   - 5: (Centro_X, Centro_Y, Width, Height, Frame_Number)
 
 	# bb_tracker[ 1 ][ 5 ]
