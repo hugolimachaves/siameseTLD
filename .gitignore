@@ -2,8 +2,8 @@ dataset/**
 parametros/**
 TLD/bin/**
 TLD/commom/vl/**
-obj/**
-vlfeat/**
+TLD/obj/**
+TLD/vlfeat/**
 TLD/TLD.cbp
 TLD/TLD.depend
 TLD/TLD.layout
