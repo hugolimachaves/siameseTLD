@@ -1,0 +1,9 @@
+dataset/**
+parametros/**
+TLDTLD/commom/vl/**
+obj/**
+TLD/vlfeat/**
+TLD/TLD.cbp
+TLD/TLD.depend
+TLD/TLD.layout
+pastaIgnore/**

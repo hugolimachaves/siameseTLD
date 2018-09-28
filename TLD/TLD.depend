@@ -258,14 +258,14 @@
 	<math.h>
 	<fstream>
 
-1537294526 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/main.c
+1538075520 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/main.c
 	"main.h"
 
-1537294526 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/main.h
+1538075520 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/main.h
 	"tracking/TLD.hpp"
 	<stdlib.h>
 
-1537294528 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/TLD.hpp
+1538075520 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/TLD.hpp
 	<iostream>
 	<opencv2/highgui/highgui.hpp>
 	<opencv2/imgproc/imgproc.hpp>
@@ -278,26 +278,26 @@
 	<opencv2/video/tracking.hpp>
 	"../common/utils.hpp"
 
-1537295892 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Detector.hpp
+1538075520 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Detector.hpp
 	<opencv2/highgui/highgui.hpp>
 	<opencv2/imgproc/imgproc.hpp>
 	<opencv2/legacy/legacy.hpp>
 	"../common/utils.hpp"
 
-1537213068 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Integrator_Learning.hpp
+1538075520 /home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Integrator_Learning.hpp
 	<opencv2/highgui/highgui.hpp>
 	<opencv2/imgproc/imgproc.hpp>
 	"../common/utils.hpp"
 	"../common/sift_utils.hpp"
 	"Detector.hpp"
 
-1537296926 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Detector.cpp
+1538075520 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Detector.cpp
 	"Detector.hpp"
 
-1537296702 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Integrator_Learning.cpp
+1538075520 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Integrator_Learning.cpp
 	"Integrator_Learning.hpp"
 
-1537294540 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/TLD.cpp
+1538075520 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/TLD.cpp
 	"TLD.hpp"
 	<fstream>
 
