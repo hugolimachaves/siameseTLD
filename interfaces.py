@@ -115,8 +115,9 @@ def detSimilarity(candidates, bb_tracker, is_neg_empty=False, is_pos_empty=False
 
 	if(not is_neg_empty):
 		bb_list_model = [BB for frame in negative_obj_model for BB in frame]
+		bb_model_last_frame = [BB for BB in negative_obj_model[LAST_ADDED]]
 		feature_aux = []
-		for bb in bb_list_model:
+		for bb in bb_model_last_frame:
 			descriptor = getDescriptor(bb)
 			feature_neg_obj_model.append(descriptor) # o tamanho e equivalente ao numero de descritores negativos
 			feature_aux.append(descriptor)
@@ -125,16 +126,17 @@ def detSimilarity(candidates, bb_tracker, is_neg_empty=False, is_pos_empty=False
 
 	if(not is_pos_empty):
 		bb_list_model = [BB for frame in positive_obj_model for BB in frame]
+		bb_model_last_frame = [BB for BB in positive_obj_model[LAST_ADDED]]
 		feature_aux = []
-		for bb in bb_list_model:	
+		for bb in bb_model_last_frame:	
 			descriptor = getDescriptor(bb)
 			feature_pos_obj_model.append(descriptor)  # o tamanho e equivalente ao numero de descritores positivos
 			feature_aux.append(descriptor)
 		if(False):
 			print('feature_pos_obj_model: ', feature_pos_obj_model, 'tamanho: ',feature_pos_obj_model[0].shape)
 			print('\npositive_obj_model: ', positive_obj_model)
-		print('len feat ', len(feature_aux),'len pos mod ',len(positive_obj_model))
-		assert(len(feature_aux) == len(positive_obj_model)), 'o tamanho do object Model difere do tamanho dos descritores'
+		print('len feat ', len(feature_aux),'len pos mod ',len(positive_obj_model[LAST_ADDED]))
+		assert(len(feature_aux) == len(positive_obj_model[LAST_ADDED])), 'o tamanho do object Model difere do tamanho dos descritores'
 
 	if(not is_candidates_empty):
 		deep_features_candidates = []
