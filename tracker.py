@@ -249,7 +249,7 @@ def main(_):
     opts = configParams()
     opts = getOpts(opts)
     #add
-    #minimumOp = tf.placeholder(tf.float32, [1, 87, 87, 3])
+    minimumOp = tf.placeholder(tf.float32, [1, opts['minimumSize'], opts['minimumSize'], 3])
     exemplarOp = tf.placeholder(tf.float32, [1, opts['exemplarSize'], opts['exemplarSize'], 3])
     instanceOp = tf.placeholder(tf.float32, [opts['numScale'], opts['instanceSize'], opts['instanceSize'], 3])
     exemplarOpBak = tf.placeholder(tf.float32, [opts['trainBatchSize'], opts['exemplarSize'], opts['exemplarSize'], 3])
@@ -263,7 +263,8 @@ def main(_):
     sess = tf.Session()
     saver.restore(sess, opts['modelName'])
     zFeatOp = sn.buildExemplarSubNetwork(exemplarOp, opts, isTrainingOp)
-    #zMinimumOp =sn.buildExemplarSubNetwork(minimumOp,opts,isTrainingOp)
+    zMinimumOp =sn.buildExemplarSubNetwork(minimumOp,opts,isTrainingOp)
+    print('rede criada')
     imgs, targetPosition, targetSize = loadVideoInfo(opts['seq_base_path'], opts['video'])
     nImgs = len(imgs)
     startFrame = 0
@@ -291,9 +292,9 @@ def main(_):
 
     minSx = 0.2*sx
     maxSx = 5.0*sx
-
     winSz = opts['scoreSize']*opts['responseUp']
     if opts['windowing'] == 'cosine':
+
         hann = np.hanning(winSz).reshape(winSz, 1)
         window = hann.dot(hann.T)
     elif opts['windowing'] == 'uniform':
@@ -303,27 +304,19 @@ def main(_):
     scales = np.array([opts['scaleStep'] ** i for i in range(int(np.ceil(opts['numScale']/2.0)-opts['numScale']), int(np.floor(opts['numScale']/2.0)+1))])
     zCrop2 = np.array(zCrop)
     zCrop = np.expand_dims(zCrop, axis=0)
-    print('dimensao zcrop2 e: ', zCrop2.shape)
+    
     #add
     zCropMinimum = Image.fromarray(zCrop2,'RGB')
-    zCropMinimum.resize([87,87])
-    zCropMinimum = np.array(zCropMinimum)  
+    zCropMinimum = zCropMinimum.resize([87,87])
+    zCropMinimum = np.array(zCropMinimum)
     zCropMinimum = np.expand_dims(zCropMinimum, axis=0)
-    
-    
     zFeat = sess.run(zFeatOp, feed_dict={exemplarOp: zCrop})
-    #zMinimum = sess.run(zMinimumOp, feed_dict={exemplarOp: zCropMinimum})
-    
-    #alteracao: hugo
-    print('z features being printed...', zFeat)
-    print('A dimensao do vetor de retorno e: ', zFeat.shape )
-    #alteracao: hugo
-    print('zCrop é :', zCrop)
-    print('tipo de zCrop é: ', type(zCrop))
-    print('O shape de zCrop é: ', zCrop.shape)
-    #neoZCrop = zCrop.
-    
-    
+    zMinimum = sess.run(zMinimumOp, feed_dict={minimumOp: zCropMinimum})
+    print('Informacoes gerais sobre o descritor'.center(100,'*'))
+    print('Descritor: ',zMinimum)
+    print('Shape do descritor: ', zMinimum.shape)
+    print('~Informacoes gerais sobre o descritor'.center(100,'*'))
+
     zFeat = np.transpose(zFeat, [1, 2, 3, 0])
     zFeatConstantOp = tf.constant(zFeat, dtype=tf.float32)
     scoreOp = sn.buildInferenceNetwork(instanceOp, zFeatConstantOp, opts, isTrainingOp)
