@@ -551,6 +551,8 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 		}
 	}
 
+	std::cout << "tracker_valid: " << tracker_valid << std::endl;
+
 	if(tracker_valid && enable_detect){
 		tracker_valid = Retrain(frame, t_bb, similaridade_positiva_bb_tracker, similaridade_negativa_bb_tracker, show,
                                 array_good_windows, size_good_windows, array_good_windows_hull, size_good_windows_hull);

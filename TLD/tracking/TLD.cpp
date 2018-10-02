@@ -664,6 +664,9 @@ void TLD_part_2(float *similaridade_positiva_candidates, float *similaridade_neg
 	clock_t start_t, end_t;
 	double elapsed;
 
+
+	std::cout << "has_bb: " << has_bb << "\tenable_detect: " << enable_detect << std::endl;
+
 	if(has_bb)
 	{
 		if(enable_detect)

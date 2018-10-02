@@ -9,6 +9,14 @@ SIZE_ARRAY = 32
 LAST_ADDED = -1
 SIZE_DESCRIPTOR = 256
 
+HULL_SIZE = 4
+WINDOW_SIZE = 40 # Example bb_list
+OBJECT_MODEL_SIZE = 400 # Example
+	
+ARRAY_SIZE = 500 # Example
+
+a = 0
+
 bad_windows  = []
 good_windows = []
 good_windows_hull   = []
@@ -73,7 +81,7 @@ def distCandidatesToTheModel(deep_features_candidates, isPositive=True):
 	distances = []
 	positions = []
 
-	print('features.size ', features.size)
+	#print('features.size ', features.size)
 	if (features.size is not 0):
 		knn_1 = KNeighborsClassifier(n_neighbors=1)
 
@@ -114,28 +122,38 @@ def detSimilarity(candidates, bb_tracker, is_neg_empty=False, is_pos_empty=False
 	negative_distances_tracker = []
 
 	if(not is_neg_empty):
-		bb_list_model = [BB for frame in negative_obj_model for BB in frame]
-		bb_model_last_frame = [BB for BB in negative_obj_model[LAST_ADDED]]
+		bb_list_model_last = [BB for BB in negative_obj_model[LAST_ADDED]]
+
 		feature_aux = []
-		for bb in bb_model_last_frame:
+		for bb in bb_list_model_last:
 			descriptor = getDescriptor(bb)
 			feature_neg_obj_model.append(descriptor) # o tamanho e equivalente ao numero de descritores negativos
 			feature_aux.append(descriptor)
+
+		'''
+		print('neg ', negative_obj_model[LAST_ADDED])
 		print('len feat ', len(feature_aux),'len neg mod ',len(negative_obj_model[LAST_ADDED]))
+		'''
+
 		assert(len(feature_aux) == len(negative_obj_model[LAST_ADDED])), 'o tamanho do object Model difere do tamanho dos descritores'
 
 	if(not is_pos_empty):
-		bb_list_model = [BB for frame in positive_obj_model for BB in frame]
-		bb_model_last_frame = [BB for BB in positive_obj_model[LAST_ADDED]]
+		bb_list_model_last = [BB for BB in positive_obj_model[LAST_ADDED]]
+
 		feature_aux = []
-		for bb in bb_model_last_frame:	
+		for bb in bb_list_model_last:	
 			descriptor = getDescriptor(bb)
 			feature_pos_obj_model.append(descriptor)  # o tamanho e equivalente ao numero de descritores positivos
 			feature_aux.append(descriptor)
-		if(False):
-			print('feature_pos_obj_model: ', feature_pos_obj_model, 'tamanho: ',feature_pos_obj_model[0].shape)
-			print('\npositive_obj_model: ', positive_obj_model)
-		print('len feat ', len(feature_aux),'len pos mod ',len(positive_obj_model[LAST_ADDED]))
+
+		'''	
+		print('feature_pos_obj_model: ', feature_pos_obj_model, 'tamanho: ',feature_pos_obj_model[0].shape)
+		print('neg ', positive_obj_model[LAST_ADDED])
+		print('asd ', bb_list_model)
+		print('len feat ', getLength(feature_aux),'len pos mod ',getLength(positive_obj_model))
+		print('\npositive_obj_model: ', positive_obj_model)
+		'''
+
 		assert(len(feature_aux) == len(positive_obj_model[LAST_ADDED])), 'o tamanho do object Model difere do tamanho dos descritores'
 
 	if(not is_candidates_empty):
@@ -165,27 +183,31 @@ def detSimilarity(candidates, bb_tracker, is_neg_empty=False, is_pos_empty=False
 		positive_distances_tracker = distCandidatesToTheModel(feature_tracker, isPositive=True)
 		negative_distances_tracker = distCandidatesToTheModel(feature_tracker, isPositive=False)
 
-
+	'''
 	print('positive_distances_candidates: ',positive_distances_candidates)
 	print('negative_distances_candidates: ',negative_distances_candidates)
 	print('positive_distances_tracker: ',positive_distances_tracker)
 	print('negative_distances_tracker: ',negative_distances_tracker)
+	'''
 
 	positive_siam_sim_cand = [convertSimilatiry(distancia) for distancia in positive_distances_candidates]
 	negative_siam_sim_cand = [convertSimilatiry(distancia) for distancia in negative_distances_candidates]
 	positive_siam_sim_bb_tracker = [convertSimilatiry(distancia) for distancia in positive_distances_tracker]
 	negative_siam_sim_bb_tracker = [convertSimilatiry(distancia) for distancia in negative_distances_tracker]
 
+	'''
 	print('positive_siam_sim_cand: ',positive_siam_sim_cand)
 	print('negative_siam_sim_cand: ',negative_siam_sim_cand)
 	print('positive_siam_sim_bb_tracker: ',positive_siam_sim_bb_tracker)
 	print('negative_siam_sim_bb_tracker: ',negative_siam_sim_bb_tracker)
+	'''
 
 	return positive_siam_sim_cand, negative_siam_sim_cand, positive_siam_sim_bb_tracker, negative_siam_sim_bb_tracker
 
 def read_data(array, array_size, frame):
 	bb_list = []
 	is_empty = True
+	print('array_size: ',array_size)
 	if(array_size is not 0):
 		bb_pos = []
 		for i in range(array_size):
@@ -221,9 +243,6 @@ def init_interface(frame=2):
 	Vaviavel necessaria para garantir o processamento do mesmo frame.
 	'''
 
-	HULL_SIZE = 4
-	WINDOW_SIZE = 40 # Examplebb_list
-	OBJECT_MODEL_SIZE = 400 # Example
 	#print("Caminho atual e:",)
 	parameters_path = os.getcwd() + "/dataset/exemplo/01-Light_video00001/parameters.yml"
 	parameters_path = parameters_path.encode('utf-8')
@@ -288,9 +307,6 @@ def init_interface(frame=2):
 	'''
 
 def TLD(frame):
-	
-	ARRAY_SIZE = 100 # Example
-
 	retorno_frame = c_int()
 
 	size_candidates = c_int()
@@ -376,11 +392,12 @@ def TLD(frame):
 	# passa uma lista de bb dos candidatos retornado pelo TLD e passa uma bb retornado pelo Tracker no TLD
 	positive_distances_candidates, negative_distances_candidates, positive_distances_tracker, negative_distances_tracker = detSimilarity(candidates, bb_tracker, is_neg_empty, is_pos_empty, is_candidates_empty, is_bb_tracker_empty)
 
+	'''
 	print('positive_distances_candidates'.center(70,'*'),positive_distances_candidates)
 	print('negative_distances_candidates'.center(70,'*'),negative_distances_candidates)
 	print('positive_distances_tracker'.center(70,'*'),positive_distances_tracker)
 	print('negative_distances_tracker'.center(70,'*'),negative_distances_tracker)
-	
+	'''
 	retorno_frame = c_int()
 
 	size_good_windows      = c_int(0) # tamanho do vetor array good windows
@@ -409,7 +426,7 @@ def TLD(frame):
 
 init_interface(1)
 
-for i in range(2,7):
+for i in range(2,354):
 	TLD(i)
  
 #'deepDescriptor' eh o descritor que sera passado para o codigo C. eh um descritor de 128/256 floats.

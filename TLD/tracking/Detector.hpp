@@ -49,7 +49,7 @@ void Train(Mat frame, BoundingBox &position, bool show,
            float *array_good_windows, int *size_good_windows,
            float *array_good_windows_hull, int *size_good_windows_hull);
 
-bool Retrain(Mat frame, BoundingBox &position, float *similaridade_positiva_bb_tracker, 
+bool Retrain(Mat frame, BoundingBox &position, float *similaridade_positiva_bb_tracker,
 			 float *similaridade_negativa_bb_tracker, bool show,
              float *array_good_windows, int *size_good_windows,
              float *array_good_windows_hull, int *size_good_windows_hull);
@@ -63,6 +63,8 @@ bool Detect_part_2(Mat frame, vector<BoundingBox> &detector_positions, vector<do
 				   float *similaridade_positiva_candidates, float *similaridade_negativa_candidates);
 
 void DetClear();
+
+void unnorm_object_model_clear();
 
 void normalize(Mat img, Mat blur_img, BoundingBox bb, float shift_x, float shift_y, Mat &sample, Mat &ens_img, Mat &nn_img);
 

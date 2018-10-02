@@ -908,6 +908,7 @@ void Train(Mat frame, BoundingBox &position, bool show,
 
 	clock_t start_g = clock();
 	DetClear();
+	unnorm_object_model_clear();
 
 	float 	frame_width = frame.size().width,
 			frame_height = frame.size().height,
@@ -925,6 +926,7 @@ void Train(Mat frame, BoundingBox &position, bool show,
 
 	if(good_windows.empty() || bad_windows.empty()){
 		DetClear();
+		unnorm_object_model_clear();
 		return;
 	}
 
@@ -1058,6 +1060,10 @@ bool Retrain(Mat frame, BoundingBox &position, float *similaridade_positiva_bb_t
              float *array_good_windows_hull, int *size_good_windows_hull){
 
 	clock_t start_g = clock();
+
+	std::cout << "unnorm_object_model[0].size(): " << unnorm_object_model[0].size() << std::endl;
+
+	unnorm_object_model_clear();
 
 	float 	frame_width = frame.size().width,
 			frame_height = frame.size().height,
@@ -1510,10 +1516,6 @@ bool Detect_part_2(Mat frame, vector<BoundingBox> &detector_positions, vector<do
 void DetClear(){
 	object_model[0].clear();
 	object_model[1].clear();
-	///NOTE: minhas alterações
-	unnorm_object_model[0].clear();
-	unnorm_object_model[1].clear();
-	/// end
 	scanning_windows.clear();
 	dataset_p.release();
 	dataset_n.release();
@@ -1524,4 +1526,9 @@ void DetClear(){
 		posteriors[i] = 0.;
 		positive[i] = negative[i] = 0;
 	}
+}
+
+void unnorm_object_model_clear(){
+	unnorm_object_model[0].clear();
+	unnorm_object_model[1].clear();
 }
