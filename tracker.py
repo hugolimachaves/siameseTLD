@@ -16,6 +16,10 @@ import utils
 from siamese_net import SiameseNet
 from parameters import configParams
 
+DIM_DESCRIPTOR = 256
+ONE_DIMENSION = 1
+ATOMIC_SIZE = 87
+
 def getOpts(opts):
     print("config opts...")
 
@@ -307,11 +311,12 @@ def main(_):
     
     #add
     zCropMinimum = Image.fromarray(zCrop2,'RGB')
-    zCropMinimum = zCropMinimum.resize([87,87])
+    zCropMinimum = zCropMinimum.resize([ATOMIC_SIZE,ATOMIC_SIZE])
     zCropMinimum = np.array(zCropMinimum)
     zCropMinimum = np.expand_dims(zCropMinimum, axis=0)
     zFeat = sess.run(zFeatOp, feed_dict={exemplarOp: zCrop})
     zMinimum = sess.run(zMinimumOp, feed_dict={minimumOp: zCropMinimum})
+    zMinimum = np.reshape(zMinimum,[DIM_DESCRIPTOR,ONE_DIMENSION])
     print('Informacoes gerais sobre o descritor'.center(100,'*'))
     print('Descritor: ',zMinimum)
     print('Shape do descritor: ', zMinimum.shape)
