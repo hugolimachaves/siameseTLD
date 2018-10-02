@@ -249,7 +249,7 @@ def main(_):
     opts = configParams()
     opts = getOpts(opts)
     #add
-    minimumOp = tf.placeholder(tf.float32, [1, 87, 87, 3])
+    #minimumOp = tf.placeholder(tf.float32, [1, 87, 87, 3])
     exemplarOp = tf.placeholder(tf.float32, [1, opts['exemplarSize'], opts['exemplarSize'], 3])
     instanceOp = tf.placeholder(tf.float32, [opts['numScale'], opts['instanceSize'], opts['instanceSize'], 3])
     exemplarOpBak = tf.placeholder(tf.float32, [opts['trainBatchSize'], opts['exemplarSize'], opts['exemplarSize'], 3])
@@ -263,7 +263,7 @@ def main(_):
     sess = tf.Session()
     saver.restore(sess, opts['modelName'])
     zFeatOp = sn.buildExemplarSubNetwork(exemplarOp, opts, isTrainingOp)
-    zMinimumOp =sn.buildExemplarSubNetwork(minimumOp,opts,isTrainingOp)
+    #zMinimumOp =sn.buildExemplarSubNetwork(minimumOp,opts,isTrainingOp)
     imgs, targetPosition, targetSize = loadVideoInfo(opts['seq_base_path'], opts['video'])
     nImgs = len(imgs)
     startFrame = 0
@@ -312,7 +312,7 @@ def main(_):
     
     
     zFeat = sess.run(zFeatOp, feed_dict={exemplarOp: zCrop})
-    zMinimum = sess.run(zMinimumOp, feed_dict={exemplarOp: zCropMinimum})
+    #zMinimum = sess.run(zMinimumOp, feed_dict={exemplarOp: zCropMinimum})
     
     #alteracao: hugo
     print('z features being printed...', zFeat)
