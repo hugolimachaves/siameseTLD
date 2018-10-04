@@ -28,6 +28,7 @@ HULL_SIZE = 4
 WINDOW_SIZE = 40 # Example bb_list
 OBJECT_MODEL_SIZE = 400 # Example
 ARRAY_SIZE = 500 # Example
+RGB = 3
 
 shared_library = CDLL('TLD/bin/Debug/libTLD.so')
 bad_windows  = []
@@ -60,6 +61,38 @@ feature_neg_obj_model = []
    - 5: (Centro_X, Centro_Y, Width, Height, Frame_Number)
 '''
 
+
+
+class Generation:
+	
+	def __init__(self,opts,siamiseNetWorkLocal):
+		self.minimumSiameseNetPlaceHolder = tf.placeholder(tf.float32, [ONE_DIMENSION, opts['minimumSize'], opts['minimumSize'], RGB])
+		tf.convert_to_tensor(False, dtype='bool', name='is_training')
+		isTrainingOp = tf.convert_to_tensor(False, dtype='bool', name='is_training')
+		self.zMinimumPreTrained =siamiseNetWorkLocal.buildExemplarSubNetwork(self.minimumSiameseNetPlaceHolder,opts,isTrainingOp)
+		self.tensorFlowSession = tf.Session()
+		tf.initialize_all_variables().run(session=self.tensorFlowSession)
+		
+
+	#passando Bounding Box no formato X,Y,W,H, retornando left, top, right, botton
+	def get_image_cropped(self,img,bb): # imagem PIL
+		left = round(bb[0] - (bb[2]/2))
+		top = round(bb[1] - (bb[3])/2)
+		right = round(bb[2] + left)
+		bottom = round(bb[3] + top)
+		cropped = img.crop([left,top,right,bottom])
+		return cropped
+
+	def getDescriptor(self,bb,imageSource): # zMinimumFeatures = sess.run(zMinimumPreTrained, feed_dict={minimumSiameseNetPlaceHolder: zCropMinimum})
+		imImageSource = self.get_image_cropped(imageSource,bb)
+		neoImageSource = imImageSource.resize((ATOMIC_SIZE,ATOMIC_SIZE))
+		npImageSource = np.array(neoImageSource)
+		npImageSource = npImageSource.reshape(1,npImageSource.shape[0],npImageSource.shape[1],3)
+		zMinimumFeatures = self.tensorFlowSession.run(self.zMinimumPreTrained, feed_dict={self.minimumSiameseNetPlaceHolder: npImageSource})
+		return zMinimumFeatures
+
+
+
 def convertSimilatiry(siameseDistance):
 	return 1 / (siameseDistance + 1) # retorna a distancia no TLD
 	
@@ -67,15 +100,6 @@ def getLength(element): # verifica o tamanho total de elementos em uma estrutura
 	if isinstance(element, list):
 		return sum(([getLength(i) for i in element]))
 	return 1
-
-def getDescriptor(bb):
-	descriptor = []
-	#TODO Estamos colocando apenas um place holder. A funcao depende da analise do tracker siameseFC no python
-	#for _ in range(SIZE_DESCRIPTOR):
-	
-	descriptor = np.random.randn(1,SIZE_DESCRIPTOR)
-
-	return descriptor
 
 # passa  as deep Features dos candidatos para o presente frame conjuntamente
 # com o modelo positivo(default) ou negativo
@@ -220,7 +244,8 @@ def read_data(array, array_size, frame, name=0):
 	return bb_list, is_empty
 
 #'frame' se refere ao numero do frame que esta sendo processado no codigo .py
-def init_interface(frame=1): 
+#/home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/dataset/exemplo/01-Light_video00001/parameters.yml
+def init_interface(parameters_path,frame=1): 
 	
 	'''
 	codigo de execucao do c/c++ aqui! 
@@ -236,7 +261,7 @@ def init_interface(frame=1):
 	'''
 
 	#print("Caminho atual e:",)
-	parameters_path = os.getcwd() + "/dataset/exemplo/01-Light_video00001/parameters.yml"
+	#parameters_path = os.getcwd() + "/dataset/exemplo/01-Light_video00001/parameters.yml"
 	parameters_path = parameters_path.encode('utf-8')
 
 	retorno_frame = c_int() # numero do frame atual
@@ -282,7 +307,7 @@ def init_interface(frame=1):
 	if(not is_good_hull_empty):
 		good_windows.append(bb_list)
 
-def TLD(frame):
+def TLD_parte_1(frame):
 	retorno_frame = c_int()
 
 	size_candidates = c_int()
@@ -315,21 +340,21 @@ def TLD(frame):
 	is_candidates_empty = True
 	is_bb_tracker_empty = True
 
-	bb_list, is_neg_empty = read_data(array_object_model_negative, size_negative.value, frame,1)
+	bb_list_negativo, is_neg_empty = read_data(array_object_model_negative, size_negative.value, frame,1)
 	if(not is_neg_empty):
-		negative_obj_model.append(bb_list)
+		negative_obj_model.append(bb_list_negativo)
 
-	bb_list, is_pos_empty = read_data(array_object_model_positive, size_positive.value, frame,2)
+	bb_list_positivo, is_pos_empty = read_data(array_object_model_positive, size_positive.value, frame,2)
 	if(not is_pos_empty):
-		positive_obj_model.append(bb_list)
+		positive_obj_model.append(bb_list_positivo)
 
-	bb_list, is_candidates_empty = read_data(array_bb_candidates, size_candidates.value, frame,3)
+	bb_list_candidate, is_candidates_empty = read_data(array_bb_candidates, size_candidates.value, frame,3)
 	if(not is_candidates_empty):
-		candidates.append(bb_list)
+		candidates.append(bb_list_candidate)
 
-	bb_list, is_bb_tracker_empty = read_data(array_bb_tracker, size_bb_tracker.value, frame,4)
+	bb_single_element_tracker, is_bb_tracker_empty = read_data(array_bb_tracker, size_bb_tracker.value, frame,4)
 	if(not is_bb_tracker_empty):
-		bb_tracker.append(bb_list)
+		bb_tracker.append(bb_single_element_tracker)
 
 	'''
 	 candidates[ N ][ 5 ]
@@ -340,7 +365,10 @@ def TLD(frame):
 	   - 1: Para ser considerado uma lista no algoritmos
 	   - 5: (Centro_X, Centro_Y, Width, Height, Frame_Number)
 	'''
-	
+
+	return bb_list_negativo, is_neg_empty, bb_list_positivo, is_pos_empty, bb_list_candidate, is_candidates_empty, bb_single_element_tracker, is_bb_tracker_empty
+
+	'''
 	positive_distances_candidates = []
 	negative_distances_candidates = []
 	positive_distances_tracker = []
@@ -349,48 +377,27 @@ def TLD(frame):
 
 	# passa uma lista de bb dos candidatos retornado pelo TLD e passa uma bb retornado pelo Tracker no TLD
 	positive_distances_candidates, negative_distances_candidates, positive_distances_tracker, negative_distances_tracker = detSimilarity(candidates, bb_tracker, is_neg_empty, is_pos_empty, is_candidates_empty, is_bb_tracker_empty)
+    '''
+
+def TLD_parte_2(sim_pos_cand, size_sim_pos_cand, sim_neg_cand, size_sim_neg_cand, sim_pos_tracker, size_sim_pos_tracker, sim_neg_tracker, size_sim_neg_tracker):
 	retorno_frame = c_int()
+
+	sim_pos_cand    = (c_float * size_sim_pos_cand)    (*sim_pos_cand)
+	sim_neg_cand    = (c_float * size_sim_neg_cand)    (*sim_neg_cand)
+	sim_pos_tracker = (c_float * size_sim_pos_tracker) (*sim_pos_tracker)
+	sim_neg_tracker = (c_float * size_sim_neg_tracker) (*sim_neg_tracker)
 
 	size_good_windows      = c_int(0) # tamanho do vetor array good windows
 	size_good_windows_hull = c_int(0) # tamanho do vetor array good_windows_hull (que e sempre 4)
-
-	similaridade_positiva_candidates = [-1] * ARRAY_SIZE
-	similaridade_negativa_candidates = [-1] * ARRAY_SIZE
-	similaridade_positiva_bb_tracker = [-1] * ARRAY_SIZE
-	similaridade_negativa_bb_tracker = [-1] * ARRAY_SIZE
-
 	array_good_windows      = [-1] * ARRAY_SIZE
 	array_good_windows_hull = [-1] * ARRAY_SIZE
-
-	similaridade_positiva_candidates = (c_float * ARRAY_SIZE) (*similaridade_positiva_candidates)
-	similaridade_negativa_candidates = (c_float * ARRAY_SIZE) (*similaridade_negativa_candidates)
-	similaridade_positiva_bb_tracker = (c_float * ARRAY_SIZE) (*similaridade_positiva_bb_tracker)
-	similaridade_negativa_bb_tracker = (c_float * ARRAY_SIZE) (*similaridade_negativa_bb_tracker)
-
 	array_good_windows      = (c_float * ARRAY_SIZE) (*array_good_windows)
 	array_good_windows_hull = (c_float * ARRAY_SIZE) (*array_good_windows_hull)
 
-	shared_library.TLD_function_2(similaridade_positiva_candidates, similaridade_negativa_candidates,
-								  similaridade_positiva_bb_tracker, similaridade_negativa_bb_tracker,
+	shared_library.TLD_function_2(sim_pos_cand, sim_neg_cand,
+								  sim_pos_tracker, sim_neg_tracker,
 								  array_good_windows, byref(size_good_windows),
 								  array_good_windows_hull, byref(array_good_windows_hull))
-
-######################## Core da interface TLD ########################
-
-init_interface(1)
-
-for i in range(2,354):
-	TLD(i)
-
-######################  ~Core da interface TLD ########################
-
-def get_image_cropped(img,bb):
-    left = round(bb[0] - (bb[2]/2))
-    top = round(bb[1] - (bb[3])/2)
-    right = round(bb[2] + left)
-    bottom = round(bb[3] + top)
-    cropped = img.crop(left,top,right,bottom)
-    return cropped
 
 def getOpts(opts):
     print("config opts...")
@@ -526,7 +533,6 @@ def getSubWinTracking(img, pos, modelSz, originalSz, avgChans):
 
     return im_patch, im_patch_original
 
-
 def makeScalePyramid(im, targetPosition, in_side_scaled, out_side, avgChans, stats, p):
     """
     computes a pyramid of re-scaled copies of the target (centered on TARGETPOSITION)
@@ -607,17 +613,17 @@ def trackerEval(score, sx, targetPosition, window, opts):
 
 '''----------------------------------------main-----------------------------------------------------'''
 def main(_):
+	
     print('run tracker...')
     opts = configParams()
     opts = getOpts(opts)
     #add
-    minimumOp = tf.placeholder(tf.float32, [1, opts['minimumSize'], opts['minimumSize'], 3])
+    minimumSiameseNetPlaceHolder = tf.placeholder(tf.float32, [1, opts['minimumSize'], opts['minimumSize'], 3])
     exemplarOp = tf.placeholder(tf.float32, [1, opts['exemplarSize'], opts['exemplarSize'], 3])
     instanceOp = tf.placeholder(tf.float32, [opts['numScale'], opts['instanceSize'], opts['instanceSize'], 3])
     exemplarOpBak = tf.placeholder(tf.float32, [opts['trainBatchSize'], opts['exemplarSize'], opts['exemplarSize'], 3])
     instanceOpBak = tf.placeholder(tf.float32, [opts['trainBatchSize'], opts['instanceSize'], opts['instanceSize'], 3])
     isTrainingOp = tf.convert_to_tensor(False, dtype='bool', name='is_training')
-
     sn = SiameseNet()
     scoreOpBak = sn.buildTrainNetwork(exemplarOpBak, instanceOpBak, opts, isTraining=False)
     saver = tf.train.Saver()
@@ -625,8 +631,9 @@ def main(_):
     sess = tf.Session()
     saver.restore(sess, opts['modelName'])
     zFeatOp = sn.buildExemplarSubNetwork(exemplarOp, opts, isTrainingOp)
-    zMinimumOp =sn.buildExemplarSubNetwork(minimumOp,opts,isTrainingOp)
-    print('rede criada')
+    zMinimumPreTrained =sn.buildExemplarSubNetwork(minimumSiameseNetPlaceHolder,opts,isTrainingOp)
+    generated = Generation(opts,sn)
+    #generated.getDescriptor(coordenadasDaImagem,Image.open('download.jpeg'))
     imgs, targetPosition, targetSize = loadVideoInfo(opts['seq_base_path'], opts['video'])
     nImgs = len(imgs)
     startFrame = 0
@@ -673,48 +680,34 @@ def main(_):
     zCropMinimum = np.array(zCropMinimum)
     zCropMinimum = np.expand_dims(zCropMinimum, axis=0)
     zFeat = sess.run(zFeatOp, feed_dict={exemplarOp: zCrop})
-    zMinimum = sess.run(zMinimumOp, feed_dict={minimumOp: zCropMinimum})
-    zMinimum = np.reshape(zMinimum,[DIM_DESCRIPTOR,ONE_DIMENSION])
-    print('Informacoes gerais sobre o descritor'.center(100,'*'))
-    print('Descritor: ',zMinimum)
-    print('Shape do descritor: ', zMinimum.shape)
-    print('~Informacoes gerais sobre o descritor'.center(100,'*'))
-
+    zMinimumFeatures = sess.run(zMinimumPreTrained, feed_dict={minimumSiameseNetPlaceHolder: zCropMinimum})
+    zMinimumFeatures = np.reshape(zMinimumFeatures,[DIM_DESCRIPTOR,ONE_DIMENSION])
     zFeat = np.transpose(zFeat, [1, 2, 3, 0])
     zFeatConstantOp = tf.constant(zFeat, dtype=tf.float32)
     scoreOp = sn.buildInferenceNetwork(instanceOp, zFeatConstantOp, opts, isTrainingOp)
     writer.add_graph(sess.graph)
-
     resPath = os.path.join(opts['seq_base_path'], opts['video'], 'res')
     bBoxes = np.zeros([nImgs, 4])
-
     tic = time.time()
     for i in range(startFrame, nImgs):
         if i > startFrame:
             im = imgs[i]
-
             if(im.shape[-1] == 1):
                 tmp = np.zeros([im.shape[0], im.shape[1], 3], dtype=np.float32)
                 tmp[:, :, 0] = tmp[:, :, 1] = tmp[:, :, 2] = np.squeeze(im)
                 im = tmp
-
             scaledInstance = sx * scales
             scaledTarget = np.array([targetSize * scale for scale in scales])
-
             xCrops = makeScalePyramid(im, targetPosition, scaledInstance, opts['instanceSize'], avgChans, None, opts)
             # sio.savemat('pyra.mat', {'xCrops': xCrops})
-
             score = sess.run(scoreOp, feed_dict={instanceOp: xCrops})
             sio.savemat('score.mat', {'score': score})
-
             newTargetPosition, newScale = trackerEval(score, round(sx), targetPosition, window, opts)
-
             targetPosition = newTargetPosition
             sx = max(minSx, min(maxSx, (1-opts['scaleLr'])*sx+opts['scaleLr']*scaledInstance[newScale]))
             targetSize = (1-opts['scaleLr'])*targetSize+opts['scaleLr']*scaledTarget[newScale]
         else:
             pass
-
         rectPosition = targetPosition-targetSize/2.
         tl = tuple(np.round(rectPosition).astype(int)[::-1])
         br = tuple(np.round(rectPosition+targetSize).astype(int)[::-1])
@@ -726,7 +719,23 @@ def main(_):
     print(time.time()-tic)
     return
 
+
+
+######################## Core da interface TLD ########################
 '''
+init_interface('/home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/dataset/exemplo/01-Light_video00001/parameters.yml',1)
+
+for i in range(2,354):
+	TLD_parte_1(i)
+'''
+######################  ~Core da interface TLD ########################
+
+
+	
+	
+	
+	
+
 if __name__=='__main__':
     tf.app.run()
-'''
+	
