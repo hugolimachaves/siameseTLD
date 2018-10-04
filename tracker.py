@@ -1,5 +1,4 @@
 # Suofei ZHANG, 2017.
-
 import os
 import tensorflow as tf
 import numpy as np
@@ -11,13 +10,11 @@ from PIL import Image
 import utils
 from siamese_net import SiameseNet
 from parameters import configParams
-
-#from interfaces.py
 from ctypes import *
 from sklearn.neighbors import KNeighborsClassifier
-import os
+'''from interfaces.py'''
 
-
+DEBUG_PRINT_ARRAY = True
 DIM_DESCRIPTOR = 256
 ONE_DIMENSION = 1
 ATOMIC_SIZE = 87
@@ -31,13 +28,7 @@ ARRAY_SIZE = 500 # Example
 RGB = 3
 
 shared_library = CDLL('TLD/bin/Debug/libTLD.so')
-bad_windows  = []
-good_windows = []
-good_windows_hull   = []
-positive_obj_model	= []
-negative_obj_model	= []
-feature_pos_obj_model = []
-feature_neg_obj_model = []
+
 
 
 '''
@@ -61,8 +52,6 @@ feature_neg_obj_model = []
    - 5: (Centro_X, Centro_Y, Width, Height, Frame_Number)
 '''
 
-
-
 class Generation:
 	
 	def __init__(self,opts,siamiseNetWorkLocal):
@@ -75,7 +64,7 @@ class Generation:
 		
 
 	#passando Bounding Box no formato X,Y,W,H, retornando left, top, right, botton
-	def get_image_cropped(self,img,bb): # imagem PIL
+	def get_image_cropped(self,img,bb): # imagemCurrentFrame PIL
 		left = round(bb[0] - (bb[2]/2))
 		top = round(bb[1] - (bb[3])/2)
 		right = round(bb[2] + left)
@@ -90,8 +79,51 @@ class Generation:
 		npImageSource = npImageSource.reshape(1,npImageSource.shape[0],npImageSource.shape[1],3)
 		zMinimumFeatures = self.tensorFlowSession.run(self.zMinimumPreTrained, feed_dict={self.minimumSiameseNetPlaceHolder: npImageSource})
 		return zMinimumFeatures
+'''
+bad_windows  = []
+good_windows = []
+good_windows_hull   = []
+positive_obj_model	= []
+negative_obj_model	= []
+feature_pos_obj_model = []
+feature_neg_obj_model = []
+'''
+class DeepDescription:
+	positive_obj_model_bb		 = []
+	negative_obj_model_bb 		 = []
+	good_windows_bb 	 		 = []
+	good_windows_hull_bb 		 = []
+	tracker_bb					 = []
+	__candidates_bb 			 = []
 
+	positive_obj_model_features  = []
+	negative_obj_model_features  = []
+	good_windows_features 		 = []
+	good_windows_hull_features   = []
+	tracker_features			 = []
+	__candidates_features 		 = []
+	
+	__currentFrame = 0
 
+	def __init__(self):
+		self.__currentFrame = 0
+
+	def setCandidates(self,candBB,candFeat,currentFrame):
+		self.__currentFrame = currentFrame
+
+		self.__candidates_bb = []
+		self.__candidates_bb = candBB
+
+		self.__candidates_features = []
+		self.__candidates_features = candFeat
+
+	def getCandidates(self,currentFrame):
+		if (currentFrame is self.__currentFrame):
+			return self.__candidates_bb, self.__candidates_features
+
+		self.__currentFrame = currentFrame
+		return [], []
+	
 
 def convertSimilatiry(siameseDistance):
 	return 1 / (siameseDistance + 1) # retorna a distancia no TLD
@@ -138,56 +170,26 @@ def distCandidatesToTheModel(deep_features_candidates, isPositive=True):
 
 	#return distances # retorna a menor distancia em relacao ao modelo, eh uma lista pois sao varios candidatos e tambem  a posicao no vetor
 
-# passo uma lista de bb dos candidatos e uma bb do tracker (lista de lista)
-def detSimilarity(candidates, bb_tracker, is_neg_empty=False, is_pos_empty=False, is_candidates_empty=False, is_bb_tracker_empty=False):
-	# candidates:
-	# sera utilizado - (sao globais): positive_obj_model, negative_obj_model
+# passo duas features e calcula a distancia euclidiana entre elas
+def detSimilarity(feature_a, feature_b):
 
+	for a, b in zip(feature_a, feature_b):
+		dist += (a - b) ** 2
+
+	return np.sqrt(dist)
+
+
+	'''
 	positive_distances_candidates = []
 	negative_distances_candidates = []
 	positive_distances_tracker = []
 	negative_distances_tracker = []
 
-	if(not is_neg_empty):
-		bb_list_model_last = [BB for BB in negative_obj_model[LAST_ADDED]]
-		feature_aux = []
-		for bb in bb_list_model_last:
-			descriptor = getDescriptor(bb)
-			feature_neg_obj_model.append(descriptor) # o tamanho e equivalente ao numero de descritores negativos
-			feature_aux.append(descriptor)
-		assert(len(feature_aux) == len(negative_obj_model[LAST_ADDED])), 'o tamanho do object Model difere do tamanho dos descritores'
+	positive_distances_candidates = distCandidatesToTheModel(deep_features_candidates, isPositive=True)
+	negative_distances_candidates = distCandidatesToTheModel(deep_features_candidates, isPositive=False)
 
-	if(not is_pos_empty):
-		bb_list_model_last = [BB for BB in positive_obj_model[LAST_ADDED]]
-
-		feature_aux = []
-		for bb in bb_list_model_last:	
-			descriptor = getDescriptor(bb)
-			feature_pos_obj_model.append(descriptor)  # o tamanho e equivalente ao numero de descritores positivos
-			feature_aux.append(descriptor)
-
-		assert(len(feature_aux) == len(positive_obj_model[LAST_ADDED])), 'o tamanho do object Model difere do tamanho dos descritores'
-
-	if(not is_candidates_empty):
-		deep_features_candidates = []
-		for bb in candidates[LAST_ADDED]:
-			#TODO fazer o descritor
-			descriptor = getDescriptor(bb)
-			deep_features_candidates.append(descriptor)
-		deep_features_candidates = np.asarray(deep_features_candidates)
-
-		positive_distances_candidates = distCandidatesToTheModel(deep_features_candidates, isPositive=True)
-		negative_distances_candidates = distCandidatesToTheModel(deep_features_candidates, isPositive=False)
-
-	if(not is_bb_tracker_empty):
-		feature_tracker = []
-		for bb in bb_tracker[LAST_ADDED]:
-			descriptor = getDescriptor(bb)
-			feature_tracker.append(descriptor)
-		feature_tracker =  np.asarray(feature_tracker)
-
-		positive_distances_tracker = distCandidatesToTheModel(feature_tracker, isPositive=True)
-		negative_distances_tracker = distCandidatesToTheModel(feature_tracker, isPositive=False)
+	positive_distances_tracker = distCandidatesToTheModel(feature_tracker, isPositive=True)
+	negative_distances_tracker = distCandidatesToTheModel(feature_tracker, isPositive=False)
 
 	positive_siam_sim_cand = [convertSimilatiry(distancia) for distancia in positive_distances_candidates]
 	negative_siam_sim_cand = [convertSimilatiry(distancia) for distancia in negative_distances_candidates]
@@ -195,37 +197,24 @@ def detSimilarity(candidates, bb_tracker, is_neg_empty=False, is_pos_empty=False
 	negative_siam_sim_bb_tracker = [convertSimilatiry(distancia) for distancia in negative_distances_tracker]
 
 	return positive_siam_sim_cand, negative_siam_sim_cand, positive_siam_sim_bb_tracker, negative_siam_sim_bb_tracker
+	'''
 
 def read_data(array, array_size, frame, name=0):
 	bb_list = []
 	is_empty = True
-	#print('array_size: ',array_size)
-
-	#if(array_size == 4):
-	if(name == 1):
-		print('\tNegativo ', end='')
-	if(name == 2):
-		print('\tPositivo ', end='')
-	if(name == 3):
-		print('\tCandidatos ', end='')
-	if(name == 4):
-		print('\tBoundding Box do tracker ', end='')
-
-	print('array: ',end='')
 
 	
-	for i in range(array_size):
-		if i%4 == 0:
-			print('[', end='')
-			print(array[i],end='')
+	if DEBUG_PRINT_ARRAY:
+		if(name == 1):
+			print('\tNegativo ', end='')
+		if(name == 2):
+			print('\tPositivo ', end='')
+		if(name == 3):
+			print('\tCandidatos ', end='')
+		if(name == 4):
+			print('\tBoundding Box do tracker ', end='')
 
-		if i%4 == 3:
-			print(array[i],end='')
-			print('] ', end='')
-		else:
-			print(array[i],', ',end='')
-
-	print('\n\n')
+		print('array: ',end='')
 
 	if(array_size is not 0):
 		bb_pos = []
@@ -237,10 +226,22 @@ def read_data(array, array_size, frame, name=0):
 				bb_list.append(bb_pos)
 				bb_pos = []
 
+			if DEBUG_PRINT_ARRAY:
+				if i%4 == 0:
+					print('[', end='')
+					print(array[i],end='')
+
+				if i%4 == 3:
+					print(array[i],end='')
+					print('] ', end='')
+				else:
+					print(array[i],', ',end='')
+
 		bb_pos.append(frame)
 		bb_list.append(bb_pos)
 		bb_pos = []
 		is_empty = False
+
 	return bb_list, is_empty
 
 #'frame' se refere ao numero do frame que esta sendo processado no codigo .py
@@ -260,21 +261,18 @@ def init_interface(parameters_path,frame=1):
 	Vaviavel necessaria para garantir o processamento do mesmo frame.
 	'''
 
-	#print("Caminho atual e:",)
 	#parameters_path = os.getcwd() + "/dataset/exemplo/01-Light_video00001/parameters.yml"
 	parameters_path = parameters_path.encode('utf-8')
+	retorno_frame = c_int() 	# numero do frame atual
+	size_negative = c_int(0)	# tamanho do vetor array objectModel negativo
+	size_positive = c_int(0) 	# tamanho do vetor array objectModel positivo
+	size_good_windows = c_int(0) 		# tamanho do vetor array good windows
+	size_good_windows_hull = c_int(0)	# tamanho do vetor array good_windows_hull (que e sempre 4)
 
-	retorno_frame = c_int() # numero do frame atual
-
-	size_negative = c_int(0) # tamanho do vetor array objectModel negativo
-	size_positive = c_int(0) # tamanho do vetor array objectModel positivo
-	size_good_windows = c_int(0) # tamanho do vetor array good windows
-	size_good_windows_hull = c_int(0) # tamanho do vetor array good_windows_hull (que e sempre 4)
-
-	array_good_windows          = [-1] * WINDOW_SIZE # placeholders
-	array_good_windows_hull     = [-1] * HULL_SIZE # placeholders
-	array_object_model_negative = [-1] * OBJECT_MODEL_SIZE # placeholders
-	array_object_model_positive = [-1] * OBJECT_MODEL_SIZE # placeholders
+	array_good_windows          = [-1] * WINDOW_SIZE 		# placeholders
+	array_good_windows_hull     = [-1] * HULL_SIZE 			# placeholders
+	array_object_model_negative = [-1] * OBJECT_MODEL_SIZE 	# placeholders
+	array_object_model_positive = [-1] * OBJECT_MODEL_SIZE 	# placeholders
 
 	# fazendo a alocacao dos vetores, (*array_good_windows) --> posicao de memoria do vetor
 	array_good_windows 			= (c_float * WINDOW_SIZE) (*array_good_windows) 
@@ -291,21 +289,13 @@ def init_interface(parameters_path,frame=1):
 	print('\nFrame de entrada: '+ str(frame)+ ' Frame de retorno: ' + str(retorno_frame.value) + '\n')
 	assert (frame == retorno_frame.value), "Conflito nos frames"
 
-	bb_list, is_neg_empty = read_data(array_object_model_negative, size_negative.value, frame)
-	if(not is_neg_empty):
-		negative_obj_model.append(bb_list)
 
-	bb_list, is_pos_empty = read_data(array_object_model_positive, size_positive.value, frame)
-	if(not is_pos_empty):
-		positive_obj_model.append(bb_list)
+	bb_list_negativo, is_neg_empty = read_data(array_object_model_negative, size_negative.value, frame, 1)
+	bb_list_positivo, is_pos_empty = read_data(array_object_model_positive, size_positive.value, frame, 2)
+	bb_list_good_window, is_good_window_empty = read_data(array_good_windows, size_good_windows.value, frame)
+	bb_good_windows_hull, is_good_hull_empty = read_data(array_good_windows_hull, size_good_windows_hull.value, frame)
 
-	bb_list, is_good_empty = read_data(array_good_windows, size_good_windows.value, frame)
-	if(not is_good_empty):
-		good_windows.append(bb_list)
-
-	bb_list, is_good_hull_empty = read_data(array_good_windows_hull, size_good_windows_hull.value, frame)
-	if(not is_good_hull_empty):
-		good_windows.append(bb_list)
+	return bb_list_negativo, is_neg_empty, bb_list_positivo, is_pos_empty, bb_list_good_window, is_good_window_empty, bb_good_windows_hull, is_good_hull_empty
 
 def TLD_parte_1(frame):
 	retorno_frame = c_int()
@@ -340,21 +330,10 @@ def TLD_parte_1(frame):
 	is_candidates_empty = True
 	is_bb_tracker_empty = True
 
-	bb_list_negativo, is_neg_empty = read_data(array_object_model_negative, size_negative.value, frame,1)
-	if(not is_neg_empty):
-		negative_obj_model.append(bb_list_negativo)
-
-	bb_list_positivo, is_pos_empty = read_data(array_object_model_positive, size_positive.value, frame,2)
-	if(not is_pos_empty):
-		positive_obj_model.append(bb_list_positivo)
-
-	bb_list_candidate, is_candidates_empty = read_data(array_bb_candidates, size_candidates.value, frame,3)
-	if(not is_candidates_empty):
-		candidates.append(bb_list_candidate)
-
-	bb_single_element_tracker, is_bb_tracker_empty = read_data(array_bb_tracker, size_bb_tracker.value, frame,4)
-	if(not is_bb_tracker_empty):
-		bb_tracker.append(bb_single_element_tracker)
+	bb_list_negativo, is_neg_empty = read_data(array_object_model_negative, size_negative.value, frame, 1)
+	bb_list_positivo, is_pos_empty = read_data(array_object_model_positive, size_positive.value, frame, 2)
+	bb_list_candidate, is_candidates_empty = read_data(array_bb_candidates, size_candidates.value, frame, 3)
+	bb_single_element_tracker, is_bb_tracker_empty = read_data(array_bb_tracker, size_bb_tracker.value, frame, 4)
 
 	'''
 	 candidates[ N ][ 5 ]
@@ -368,29 +347,32 @@ def TLD_parte_1(frame):
 
 	return bb_list_negativo, is_neg_empty, bb_list_positivo, is_pos_empty, bb_list_candidate, is_candidates_empty, bb_single_element_tracker, is_bb_tracker_empty
 
+	
+
 	'''
 	positive_distances_candidates = []
 	negative_distances_candidates = []
 	positive_distances_tracker = []
 	negative_distances_tracker = []
 
-
 	# passa uma lista de bb dos candidatos retornado pelo TLD e passa uma bb retornado pelo Tracker no TLD
 	positive_distances_candidates, negative_distances_candidates, positive_distances_tracker, negative_distances_tracker = detSimilarity(candidates, bb_tracker, is_neg_empty, is_pos_empty, is_candidates_empty, is_bb_tracker_empty)
     '''
 
 def TLD_parte_2(sim_pos_cand, size_sim_pos_cand, sim_neg_cand, size_sim_neg_cand, sim_pos_tracker, size_sim_pos_tracker, sim_neg_tracker, size_sim_neg_tracker):
-	retorno_frame = c_int()
+	#retorno_frame = c_int()
 
 	sim_pos_cand    = (c_float * size_sim_pos_cand)    (*sim_pos_cand)
 	sim_neg_cand    = (c_float * size_sim_neg_cand)    (*sim_neg_cand)
 	sim_pos_tracker = (c_float * size_sim_pos_tracker) (*sim_pos_tracker)
 	sim_neg_tracker = (c_float * size_sim_neg_tracker) (*sim_neg_tracker)
 
-	size_good_windows      = c_int(0) # tamanho do vetor array good windows
-	size_good_windows_hull = c_int(0) # tamanho do vetor array good_windows_hull (que e sempre 4)
+	size_good_windows      = c_int(0) 	# tamanho do vetor array good windows
+	size_good_windows_hull = c_int(0) 	# tamanho do vetor array good_windows_hull (que e sempre 4)
+
 	array_good_windows      = [-1] * ARRAY_SIZE
 	array_good_windows_hull = [-1] * ARRAY_SIZE
+
 	array_good_windows      = (c_float * ARRAY_SIZE) (*array_good_windows)
 	array_good_windows_hull = (c_float * ARRAY_SIZE) (*array_good_windows_hull)
 
@@ -494,7 +476,6 @@ def getSubWinTracking(img, pos, modelSz, originalSz, avgChans):
     # make sure the size is not too small
     assert min(im_sz[:2]) > 2, "the size is too small"
     c = (np.array(sz) + 1) / 2
-
     # check out-of-bounds coordinates, and set them to black
     context_xmin = round(pos[1] - c[1])
     context_xmax = context_xmin + sz[1] - 1
@@ -504,12 +485,10 @@ def getSubWinTracking(img, pos, modelSz, originalSz, avgChans):
     top_pad = max(0, int(-context_ymin))
     right_pad = max(0, int(context_xmax - im_sz[1] + 1))
     bottom_pad = max(0, int(context_ymax - im_sz[0] + 1))
-
     context_xmin = int(context_xmin + left_pad)
     context_xmax = int(context_xmax + left_pad)
     context_ymin = int(context_ymin + top_pad)
     context_ymax = int(context_ymax + top_pad)
-
     if top_pad or left_pad or bottom_pad or right_pad:
         r = np.pad(img[:, :, 0], ((top_pad, bottom_pad), (left_pad, right_pad)), mode='constant',
                    constant_values=avgChans[0])
@@ -520,11 +499,7 @@ def getSubWinTracking(img, pos, modelSz, originalSz, avgChans):
         r = np.expand_dims(r, 2)
         g = np.expand_dims(g, 2)
         b = np.expand_dims(b, 2)
-
-
-
         img = np.concatenate((r, g, b ), axis=2)
-
     im_patch_original = img[context_ymin:context_ymax + 1, context_xmin:context_xmax + 1, :]
     if not np.array_equal(modelSz, originalSz):
         im_patch = cv2.resize(im_patch_original, modelSz)
@@ -551,7 +526,6 @@ def makeScalePyramid(im, targetPosition, in_side_scaled, out_side, avgChans, sta
     if p['subMean']:
         pass
     assert round(beta * min_target_side) == int(out_side)
-
     tmp_list = []
     tmp_pos = ((search_side - 1) / 2., (search_side - 1) / 2.)
     for s in range(p['numScale']):
@@ -559,9 +533,7 @@ def makeScalePyramid(im, targetPosition, in_side_scaled, out_side, avgChans, sta
         tmp_region, _ = getSubWinTracking(search_region, tmp_pos, (out_side, out_side), (target_side, target_side),
                                                avgChans)
         tmp_list.append(tmp_region)
-
     pyramid = np.stack(tmp_list)
-
     return pyramid
 
 def trackerEval(score, sx, targetPosition, window, opts):
@@ -575,31 +547,24 @@ def trackerEval(score, sx, targetPosition, window, opts):
         currentScaleID = int(opts['numScale']/2)
         bestScale = currentScaleID
         bestPeak = -float('Inf')
-
         for s in range(opts['numScale']):
             if opts['responseUp'] > 1:
                 responseMapsUP.append(cv2.resize(responseMaps[s, :, :], (upsz, upsz), interpolation=cv2.INTER_CUBIC))
             else:
                 responseMapsUP.append(responseMaps[s, :, :])
-
             thisResponse = responseMapsUP[-1]
-
             if s != currentScaleID:
                 thisResponse = thisResponse*opts['scalePenalty']
-
             thisPeak = np.max(thisResponse)
             if thisPeak > bestPeak:
                 bestPeak = thisPeak
                 bestScale = s
-
         responseMap = responseMapsUP[bestScale]
     else:
         responseMap = cv2.resize(responseMaps[0, :, :], (upsz, upsz), interpolation=cv2.INTER_CUBIC)
         bestScale = 0
-
     responseMap = responseMap - np.min(responseMap)
     responseMap = responseMap/np.sum(responseMap)
-
     responseMap = (1-opts['wInfluence'])*responseMap+opts['wInfluence']*window
     rMax, cMax = np.unravel_index(responseMap.argmax(), responseMap.shape)
     pCorr = np.array((rMax, cMax))
@@ -673,8 +638,6 @@ def main(_):
     scales = np.array([opts['scaleStep'] ** i for i in range(int(np.ceil(opts['numScale']/2.0)-opts['numScale']), int(np.floor(opts['numScale']/2.0)+1))])
     zCrop2 = np.array(zCrop)
     zCrop = np.expand_dims(zCrop, axis=0)
-    
-    #add
     zCropMinimum = Image.fromarray(zCrop2,'RGB')
     zCropMinimum = zCropMinimum.resize([ATOMIC_SIZE,ATOMIC_SIZE])
     zCropMinimum = np.array(zCropMinimum)
@@ -719,23 +682,86 @@ def main(_):
     print(time.time()-tic)
     return
 
-
+def addModel(generated, bb_list, bb_result, feature_result, image_path):
+	for bb in bb_list:
+		currentFeature = generated.getDescriptor(bb, image_path)
+		bb_result.append(bb)
+		feature_result.append(currentFeature)
 
 ######################## Core da interface TLD ########################
-'''
-init_interface('/home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/dataset/exemplo/01-Light_video00001/parameters.yml',1)
 
+bb_list_negativo, _, bb_list_positivo, _, bb_list_good_window, _, bb_good_windows_hull, _ = init_interface('/home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/dataset/exemplo/01-Light_video00001/parameters.yml',1)
+
+addModel(generated, bb_list_negativo,     generalDescriptor.negative_obj_model_bb, generalDescriptor.negative_obj_model_features)
+addModel(generated, bb_list_positivo,     generalDescriptor.positive_obj_model_bb, generalDescriptor.positive_obj_model_features)
+addModel(generated, bb_list_good_window,  generalDescriptor.good_window_bb,        generalDescriptor.good_window_features)
+addModel(generated, bb_good_windows_hull, generalDescriptor.good_windows_hull_bb,  generalDescriptor.good_windows_hull_features)
+	
+generalDescriptor = DeepDescriptor()
+extensaoImagem = 'extensao' #TODO Arrumar isso aqui
 for i in range(2,354):
 	TLD_parte_1(i)
-'''
+	
+	bb_list_negativo, _ , bb_list_positivo, _ , bb_list_candidato, _, bb_single_element_tracker, _ = TLD_parte_1(frame)
+	
+	currentFrameNumber = i #TODO provisorio, altere isso pq nao vai rodar aqui
+
+	addModel(generated, bb_list_negativo, generalDescriptor.negative_obj_model_bb, generalDescriptor.negative_obj_model_features)
+	addModel(generated, bb_list_positivo, generalDescriptor.positive_obj_model_bb, generalDescriptor.positive_obj_model_features)
+
+	list_feature = []
+	list_bb 	 = [] 
+	for bbCandidato in bb_list_candidato:
+		currentFeature = generated.getDescriptor(bbCandidato,Image.open(os.path.join(os.getcwd,currentFrameNumber,extensaoImagem)))
+		list_bb.append(bbCandidato)
+		list_feature.append(currentFeature)
+
+	generalDescriptor.setCandidates(list_bb,list_feature,currentFrameNumber)
+	
+	if True: # Apenas para encapsulamento - Hugo Chaves 2018
+		currentFeature = generated.getDescriptor(bb_single_element_tracker,Image.open(os.path.join(os.getcwd,currentFrameNumber,extensaoImagem)))
+		generalDescriptor.tracker_bb.append(bb_single_element_tracker)
+		generalDescriptor.currentFeature.append(currentFeature)
+
+	features_candidates = generalDescriptor.getCandidates(currentFrameNumber)
+
+	positive_distances_candidates = []
+	negative_distances_candidates = []
+	positive_distances_tracker = []
+	negative_distances_tracker = []
+
+	# Calculo das distancias para os candidatos
+	for candidate in features_candidates:
+		distances_candidate = []
+		for positive in generalDescriptor.positive_obj_model_features:
+			dist = detSimilarity(candidate, positive)
+			distances_candidate.append(dist)	# Lista das distancias em relacao as features positivas
+
+		positive_distances_candidates.append(distances_candidate)	# Lista das distancias para cada candidato
+
+	for candidate in features_candidates:
+		distances_candidate = []
+		for negative in generalDescriptor.negative_obj_model_features:
+			dist = detSimilarity(candidate, negative)
+			distances_candidate.append(dist)	# Lista das distancias em relacao as features negativas
+
+		negative_distances_candidates.append(distances_candidate)	# Lista das distancias para cada candidato
+	
+	# Calculo das distancias para a BB do Tracker
+	for positive in generalDescriptor.positive_obj_model_features:
+		dist = detSimilarity(generalDescriptor.tracker_feature[LAST_ADDED], positive)
+		positive_distances_tracker.append(dist)	# Lista das distancias em relacao as features positivas
+
+	for negative in generalDescriptor.negative_obj_model_features:
+		dist = detSimilarity(generalDescriptor.tracker_feature[LAST_ADDED], negative)
+		negative_distances_tracker.append(dist)	# Lista das distancias em relacao as features positivas
+	
+	
+
+
+
 ######################  ~Core da interface TLD ########################
 
 
-	
-	
-	
-	
-
 if __name__=='__main__':
     tf.app.run()
-	
