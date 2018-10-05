@@ -896,6 +896,8 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
 		obj += 1;
 	}
 
+	std::cout << "Positive Obj Model [C++]: " << array_object_model_positive[0] << " " << array_object_model_positive[1] << " " << array_object_model_positive[2] << " " << array_object_model_positive[3] << std::endl;
+
 	indexes.clear();
 }
 
@@ -1328,6 +1330,7 @@ void ensembleClassifier(float *array_bb_candidates, int *size_candidates, float 
 		array_bb_candidates[i+2] = widthBB (scanning_windows[sw_index]);
 		array_bb_candidates[i+3] = heightBB(scanning_windows[sw_index]);
 
+		std::cout << "Candidate " << i/4 << " [C++]: " << array_bb_candidates[i] << " " << array_bb_candidates[i+1] << " " << array_bb_candidates[i+2] << " " << array_bb_candidates[i+3] << std::endl;
 		i += 4;
 	}
 

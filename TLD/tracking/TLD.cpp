@@ -594,6 +594,7 @@ void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
 				float *bb_tracker, int *size_bb_tracker){
 	clock_t start_t, end_t;
 	double elapsed;
+	unnorm_object_model_clear();
 
 	if(!pause_cap){
 		nextFrame(&next_frame, repeat_video, true);
@@ -663,7 +664,7 @@ void TLD_part_2(float *similaridade_positiva_candidates, float *similaridade_neg
                 float *array_good_windows_hull, int *size_good_windows_hull){
 	clock_t start_t, end_t;
 	double elapsed;
-
+    unnorm_object_model_clear();
 
 	std::cout << "has_bb: " << has_bb << "\tenable_detect: " << enable_detect << std::endl;
 
