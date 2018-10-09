@@ -1,5 +1,6 @@
 # Suofei ZHANG, 2017.
 import os
+import math
 import tensorflow as tf
 import numpy as np
 import glob
@@ -12,7 +13,6 @@ from siamese_net import SiameseNet
 from parameters import configParams
 from ctypes import *
 from sklearn.neighbors import KNeighborsClassifier
-'''from interfaces.py'''
 
 DEBUG_PRINT_ARRAY = True
 DIM_DESCRIPTOR = 256
@@ -35,10 +35,7 @@ ULTIMO_FRAME = 354
 YML_FILE_NAME = 'parameters.yml'
 PARAMETERS_PATH = os.path.join(os.getcwd(),'dataset/exemplo/01-Light_video00001',YML_FILE_NAME)
 
-
 shared_library = CDLL('TLD/bin/Debug/libTLD.so')
-
-
 
 '''
  good_windows_hull[ N ][ 5 ]
@@ -75,7 +72,7 @@ class Generation:
 	#passando Bounding Box no formato X,Y,W,H, retornando left, top, right, botton
 	def get_image_cropped(self, img, bb): # imagemCurrentFrame PIL
 		left	= round(bb[0] - (bb[2]/2))
-		top	 = round(bb[1] - (bb[3])/2)
+		top	    = round(bb[1] - (bb[3])/2)
 		right   = round(bb[2] + left)
 		bottom  = round(bb[3] + top)
 
@@ -90,15 +87,7 @@ class Generation:
 		zMinimumFeatures = self.tensorFlowSession.run(self.zMinimumPreTrained, feed_dict={self.minimumSiameseNetPlaceHolder: npImageSource})
 		
 		return zMinimumFeatures
-'''
-bad_windows  = []
-good_windows = []
-good_windows_hull   = []
-positive_obj_model	= []
-negative_obj_model	= []
-feature_pos_obj_model = []
-feature_neg_obj_model = []
-'''
+
 class DeepDescription:
 	positive_obj_model_bb		 = []
 	negative_obj_model_bb 		 = []
@@ -150,7 +139,6 @@ class DeepDescription:
 generalDescriptor = DeepDescription()
 
 def convertSimilatiry(siameseDistance):
-	#print('Siamese distance: ', siameseDistance)
 	return 1.0 / (siameseDistance + 1.0) # retorna a distancia no TLD
 	
 def getLength(element): # verifica o tamanho total de elementos em uma estrutura de dados de dimensoes arbitrarias
@@ -177,7 +165,6 @@ def distCandidatesToTheModel(deep_features_candidates, isPositive=True):
 	distances = []
 	positions = []
 
-	#print('features.size ', features.size)
 	if (features.size is not 0):
 		knn_1 = KNeighborsClassifier(n_neighbors=1)
 		listFeatures = [bb for frame in features for bb in frame]
@@ -193,13 +180,9 @@ def distCandidatesToTheModel(deep_features_candidates, isPositive=True):
 
 	return distances # retorna a menor distancia em relacao ao modelo, eh uma lista pois sao varios candidatos e tambem  a posicao no vetor
 
-	#return distances # retorna a menor distancia em relacao ao modelo, eh uma lista pois sao varios candidatos e tambem  a posicao no vetor
-
 # passo duas features e calcula a distancia euclidiana entre elas
 def detSimilarity(feature_a, feature_b):
 	dist = 0
-	#print('featura a: ', feature_a)
-	#print('feature b: ',feature_b)
 	if len(feature_a.shape) > 2:
 		feature_a = feature_a.reshape((max(feature_a.shape),ONE_DIMENSION))
 	if len(feature_b.shape) > 2:
@@ -207,29 +190,7 @@ def detSimilarity(feature_a, feature_b):
 	for a, b in zip(feature_a, feature_b):
 		dist += (a - b) ** 2
 
-	print('feature_a.shape', feature_a.shape)
-	print('dist in desSimilarity', np.sqrt(dist))
 	return np.sqrt(dist)
-
-	'''
-	positive_distances_candidates = []
-	negative_distances_candidates = []
-	positive_distances_tracker = []
-	negative_distances_tracker = []
-
-	positive_distances_candidates = distCandidatesToTheModel(deep_features_candidates, isPositive=True)
-	negative_distances_candidates = distCandidatesToTheModel(deep_features_candidates, isPositive=False)
-
-	positive_distances_tracker = distCandidatesToTheModel(feature_tracker, isPositive=True)
-	negative_distances_tracker = distCandidatesToTheModel(feature_tracker, isPositive=False)
-
-	positive_siam_sim_cand = [convertSimilatiry(distancia) for distancia in positive_distances_candidates]
-	negative_siam_sim_cand = [convertSimilatiry(distancia) for distancia in negative_distances_candidates]
-	positive_siam_sim_bb_tracker = [convertSimilatiry(distancia) for distancia in positive_distances_tracker]
-	negative_siam_sim_bb_tracker = [convertSimilatiry(distancia) for distancia in negative_distances_tracker]
-
-	return positive_siam_sim_cand, negative_siam_sim_cand, positive_siam_sim_bb_tracker, negative_siam_sim_bb_tracker
-	'''
 
 def read_data(array, array_size, frame, name=0):
 	bb_list = []
@@ -256,13 +217,11 @@ def read_data(array, array_size, frame, name=0):
 				bb_pos.append(frame)
 				bb_list.append(bb_pos)
 				bb_pos = []
-
 			if DEBUG_PRINT_ARRAY and name is not 0:
 				if i%4 == 0:
 					print('[', end='')
-					print(array[i],end=''))
-
-				if i%4 == 3:
+					print(array[i],', ', end='')
+				elif i%4 == 3:
 					print(array[i],end='')
 					print('] ', end='')
 				else:
@@ -329,8 +288,6 @@ def init_TLD_in_siameseFC(generated, imgs_pil, frame=1):
 	addModel(generated, bb_list_good_window,  generalDescriptor.good_windows_bb,	   generalDescriptor.good_windows_features,		  imgs_pil[POSICAO_PRIMEIRO_FRAME])
 	addModel(generated, bb_good_windows_hull, generalDescriptor.good_windows_hull_bb,  generalDescriptor.good_windows_hull_features,  imgs_pil[POSICAO_PRIMEIRO_FRAME])
 
-	#print('\n\n\n##############      \n',generalDescriptor.good_windows_hull_features)
-	#return bb_list_negativo, is_neg_empty, bb_list_positivo, is_pos_empty, bb_list_good_window, is_good_window_empty, bb_good_windows_hull, is_good_hull_empty
 
 def TLD_parte_1(generated, imgs_pil, frame):
 	retorno_frame = c_int()
@@ -391,25 +348,13 @@ def TLD_parte_1(generated, imgs_pil, frame):
 	addModel(generated, bb_list_candidate, list_bb, list_feature, imgs_pil[posicao])
 	generalDescriptor.setCandidates(list_bb, list_feature, frame)
 
-	# Calculo das distancias e similaridades para os candidatos	
+	# Calculo das distancias e similaridades para os candidatos
 
 	_ , features_candidates = generalDescriptor.getCandidates(frame)
 
-	'''
-	print('features_candidates: ',features_candidates)
-	print('generalDescriptor.positive_obj_model_features ', generalDescriptor.positive_obj_model_features)
-	print('Tam de features_candidates: ',len(features_candidates))
-	print('Tam de generalDescriptor.positive_obj_model_features: ',len(generalDescriptor.positive_obj_model_features))
-	'''
-
 	for candidate in features_candidates:
-		#print('features_candidates: ',features_candidates)
 		distances_candidate = []
 		for positive in generalDescriptor.positive_obj_model_features:
-			cand_np_array = np.asarray(candidate)
-			#print('Candidate: ', candidate)
-			#print('NP Candidate: ', cand_np_array)
-			#print('Shape Candidate: ', cand_np_array.shape)
 			dist = detSimilarity(candidate, positive)
 			distances_candidate.append(dist)	# Lista das distancias em relacao as features positivas
 			
@@ -436,17 +381,32 @@ def TLD_parte_1(generated, imgs_pil, frame):
 		generalDescriptor.negative_distances_tracker_candidate.append(dist)	# Lista das distancias em relacao as features negativas
 		generalDescriptor.negative_similarity_tracker_candidate.append(convertSimilatiry(dist))
 
-	#return bb_list_negativo, is_neg_empty, bb_list_positivo, is_pos_empty, bb_list_candidate, is_candidates_empty, bb_single_element_tracker, is_bb_tracker_empty
-
-def TLD_parte_2(generated, imgs_pil):
-	#retorno_frame = c_int()
+def TLD_parte_2(generated, imgs_pil, frame):
 	
+	#max_sim_pos_candidates = max(generalDescriptor.positive_similarity_candidates)
 
-	#print('general descriptor: ', generalDescriptor.positive_similarity_candidates)
-	sim_pos_cand	= (c_float * len(generalDescriptor.positive_similarity_candidates))	(*generalDescriptor.positive_similarity_candidates)
-	sim_neg_cand	= (c_float * len(generalDescriptor.negative_similarity_candidates))	(*generalDescriptor.negative_similarity_candidates)
-	sim_pos_tracker = (c_float * len(generalDescriptor.positive_similarity_tracker_candidate)) (*generalDescriptor.positive_similarity_tracker_candidate)
-	sim_neg_tracker = (c_float * len(generalDescriptor.negative_similarity_tracker_candidate)) (*generalDescriptor.negative_similarity_tracker_candidate)
+	if(len(generalDescriptor.positive_similarity_tracker_candidate)): # Verifica se a lista esta vazia
+		max_sim_positive_tracker_candidate = max(generalDescriptor.positive_similarity_tracker_candidate)
+		pos_sim_positive_tracker_candidate = generalDescriptor.positive_similarity_tracker_candidate.index(max_sim_positive_tracker_candidate)
+
+	if(len(generalDescriptor.negative_similarity_tracker_candidate)): # Verifica se a lista esta vazia
+		max_sim_negative_tracker_candidate = max(generalDescriptor.negative_similarity_tracker_candidate)
+		pos_sim_negative_tracker_candidate = generalDescriptor.negative_similarity_tracker_candidate.index(max_sim_negative_tracker_candidate)
+
+
+	lista_positive_simi_candidates = list( np.asarray( generalDescriptor.positive_similarity_candidates ).reshape(-1) )
+	lista_negative_simi_candidates = list( np.asarray( generalDescriptor.negative_similarity_candidates ).reshape(-1) )
+
+	lista_positive_simi_tracker_candidate = list( np.asarray( generalDescriptor.positive_similarity_tracker_candidate ).reshape(-1) )
+	lista_negative_simi_tracker_candidate = list( np.asarray( generalDescriptor.negative_similarity_tracker_candidate ).reshape(-1) )
+	
+	if(len(lista_positive_simi_tracker_candidate)):
+		print('Pos_Global ', pos_sim_positive_tracker_candidate, ' Pos_List ', lista_positive_simi_tracker_candidate.index(max(lista_positive_simi_tracker_candidate)))
+
+	positive_simi_cand	= (c_float * len(generalDescriptor.positive_similarity_candidates))	(*lista_positive_simi_candidates)
+	negative_simi_cand	= (c_float * len(generalDescriptor.negative_similarity_candidates))	(*lista_negative_simi_candidates)
+	positive_simi_tracker = (c_float * len(generalDescriptor.positive_similarity_tracker_candidate)) (*lista_positive_simi_tracker_candidate)
+	negative_simi_tracker = (c_float * len(generalDescriptor.negative_similarity_tracker_candidate)) (*lista_negative_simi_tracker_candidate)
 
 	size_good_windows	  = c_int(0) 	# tamanho do vetor array good windows
 	size_good_windows_hull = c_int(0) 	# tamanho do vetor array good_windows_hull (que e sempre 4)
@@ -457,8 +417,8 @@ def TLD_parte_2(generated, imgs_pil):
 	array_good_windows	  = (c_float * ARRAY_SIZE) (*array_good_windows)
 	array_good_windows_hull = (c_float * ARRAY_SIZE) (*array_good_windows_hull)
 
-	shared_library.TLD_function_2(sim_pos_cand, sim_neg_cand,
-								  sim_pos_tracker, sim_neg_tracker,
+	shared_library.TLD_function_2(positive_simi_cand, negative_simi_cand,
+								  positive_simi_tracker, negative_simi_tracker,
 								  array_good_windows, byref(size_good_windows),
 								  array_good_windows_hull, byref(array_good_windows_hull))
 
@@ -503,8 +463,8 @@ def getAxisAlignedBB(region):
 	assert (nv == 8 or nv == 4)
 
 	if nv == 8:
-		xs = region[0 : : 2]
-		ys = region[1 : : 2]
+		xs = region[0 : : 2] #comeca do zero e incrementa de 2 em 2
+		ys = region[1 : : 2] #comeca do um e incrementa de 2 em 2
 		cx = np.mean(xs)
 		cy = np.mean(ys)
 		x1 = min(xs)
@@ -550,6 +510,24 @@ def loadVideoInfo(basePath, video):
 	groundTruth = open(groundTruthFile, 'r')
 	reader = groundTruth.readline()
 	region = [float(i) for i in reader.strip().split(",")]
+	print('Exemplo de variavel do tipo region: ', region)
+	cx, cy, w, h = getAxisAlignedBB(region)
+	pos = [cy, cx]
+	targetSz = [h, w]
+
+	imgs = frameGenerator(videoPath)
+
+	return imgs, np.array(pos), np.array(targetSz)
+
+#mais generico, para rodar com o dataset a sua escolha
+def loadVideoInfo2(basePath, relativePathToTheFrames,):
+	videoPath = os.path.join(basePath, relativePathToTheFrames)
+	groundTruthFile = os.path.join(basePath, video, 'groundtruth.txt')
+
+	groundTruth = open(groundTruthFile, 'r')
+	reader = groundTruth.readline()
+	region = [float(i) for i in reader.strip().split(",")]
+	print('Exemplo de variavel do tipo region: ', region)
 	cx, cy, w, h = getAxisAlignedBB(region)
 	pos = [cy, cx]
 	targetSz = [h, w]
@@ -600,11 +578,11 @@ def getSubWinTracking(img, pos, modelSz, originalSz, avgChans):
 	return im_patch, im_patch_original
 
 def makeScalePyramid(im, targetPosition, in_side_scaled, out_side, avgChans, stats, p):
-	"""
+	'''
 	computes a pyramid of re-scaled copies of the target (centered on TARGETPOSITION)
 	and resizes them to OUT_SIDE. If crops exceed image boundaries they are padded with AVGCHANS.
 
-	"""
+	'''
 	in_side_scaled = np.round(in_side_scaled)
 	max_target_side = int(round(in_side_scaled[-1]))
 	min_target_side = int(round(in_side_scaled[0]))
@@ -663,7 +641,6 @@ def trackerEval(score, sx, targetPosition, window, opts):
 	dispInstanceInput = dispInstanceFinal*opts['totalStride']/opts['responseUp']
 	dispInstanceFrame = dispInstanceInput*sx/opts['instanceSize']
 	newTargetPosition = targetPosition+dispInstanceFrame
-	# print(bestScale)
 
 	return newTargetPosition, bestScale
 
@@ -764,8 +741,8 @@ def main(_):
 			sx = max(minSx, min(maxSx, (1-opts['scaleLr'])*sx+opts['scaleLr']*scaledInstance[newScale]))
 			targetSize = (1-opts['scaleLr'])*targetSize+opts['scaleLr']*scaledTarget[newScale]
 
-			TLD_parte_1(generated, imgs_pil, frame+1)
-			TLD_parte_2(generated, imgs_pil)
+			TLD_parte_1(generated, imgs_pil, frame+1) #Nao tem o frame 0, comeca no 1
+			TLD_parte_2(generated, imgs_pil, frame+1)
 
 		else:
 			init_TLD_in_siameseFC(generated, imgs_pil, frame+1)
@@ -781,83 +758,15 @@ def main(_):
 	print(time.time()-tic)
 	return
 
-#mal feito ou incompleto(?)
 def addModel(generated, bb_list, bb_acumulated_atribute, feature_acumulated_atribute, image):
 	for bb in bb_list:
-		currentFeature = generated.getDescriptor(bb, image)
-		#print('\n\n\n\n##################  ',currentFeature)
-		bb_acumulated_atribute.append(bb)
-		feature_acumulated_atribute.append(currentFeature)
-
-######################## Core da interface TLD ########################
-
-# Criar a lista de imagens que serao processadas no rastreamento
-
-
-
-'''	
-for frame, posicao in zip(range(SEGUNDO_FRAME,ULTIMO_FRAME),range(POSICAO_SEGUNDO_FRAME,ULTIMO_FRAME-1) ):
-	bb_list_negativo, _ , bb_list_positivo, _ , bb_list_candidato, _, bb_single_element_tracker, _ = TLD_parte_1(frame)
-
-	addModel(generated, bb_list_negativo, generalDescriptor.negative_obj_model_bb, generalDescriptor.negative_obj_model_features, imgs_pil[posicao])
-	addModel(generated, bb_list_positivo, generalDescriptor.positive_obj_model_bb, generalDescriptor.positive_obj_model_features, imgs_pil[posicao])
-	addModel(generated, bb_single_element_tracker, generalDescriptor.tracker_bb, generalDescriptor.tracker_features, imgs_pil[posicao])
-	
-	list_feature = []
-	list_bb 	 = []
-	addModel(generated, bb_list_candidate, list_bb, list_feature, imgs_pil[posicao])
-	generalDescriptor.setCandidates(list_bb,list_feature, frame)
-
-	# Calculo das distancias e similaridades para os candidatos	
-	positive_distances_candidates  = []
-	negative_distances_candidates  = []
-	positive_similarity_candidates = []
-	negative_similarity_candidates = []
-
-	positive_distances_tracker_candidate  = []
-	negative_distances_tracker_candidate  = []
-	positive_similarity_tracker_candidate = []
-	negative_similarity_tracker_candidate = []
-
-	features_candidates = generalDescriptor.getCandidates(currentFrameNumber)
-
-	for candidate in features_candidates:
-		distances_candidate = []
-		for positive in generalDescriptor.positive_obj_model_features:
-			dist = detSimilarity(candidate, positive)
-			distances_candidate.append(dist)	# Lista das distancias em relacao as features positivas
-			
-		positive_distances_candidates.append(distances_candidate)	# Lista das distancias para cada candidato
-		positive_similarity_candidates.append([convertSimilatiry(distance) for distance in distances_candidate])
-		
-	for candidate in features_candidates:
-		distances_candidate = []
-		for negative in generalDescriptor.negative_obj_model_features:
-			dist = detSimilarity(candidate, negative)
-			distances_candidate.append(dist)	# Lista das distancias em relacao as features negativas
-
-		negative_distances_candidates.append(distances_candidate)	# Lista das distancias para cada candidato
-		negative_similarity_candidates.append([convertSimilatiry(distance) for distance in distances_candidate])
-	
-	# Calculo das distancias e similaridades para a BB do candidato do Tracker
-	for positive in generalDescriptor.positive_obj_model_features:
-		dist = detSimilarity(generalDescriptor.tracker_feature[LAST_ADDED], positive)
-		positive_distances_tracker_candidate.append(dist)	# Lista das distancias em relacao as features positivas
-		positive_similarity_tracker_candidate.append(convertSimilatiry(dist))
-
-	for negative in generalDescriptor.negative_obj_model_features:
-		dist = detSimilarity(generalDescriptor.tracker_feature[LAST_ADDED], negative)
-		negative_distances_tracker_candidate.append(dist)	# Lista das distancias em relacao as features negativas
-		negative_similarity_tracker_candidate.append(convertSimilatiry(dist))
-
-	bb_list_good_window, _, bb_good_windows_hull, _ = TLD_parte_2()
-
-	addModel(generated, bb_list_good_window,  generalDescriptor.good_windows_bb,		generalDescriptor.good_windows_features,	   0image)
-	addModel(generated, bb_good_windows_hull, generalDescriptor.good_windows_hull_bb,  generalDescriptor.good_windows_hull_features, 0image)
-'''
-
-
-######################  ~Core da interface TLD ########################
+		#print('bb: '.center(70,'#'))
+		#print(bb)
+		#print('type: ',type(bb[0]))
+		if(not (True in [math.isnan(item) for item in bb])):
+			currentFeature = generated.getDescriptor(bb, image)
+			bb_acumulated_atribute.append(bb)
+			feature_acumulated_atribute.append(currentFeature)
 
 if __name__=='__main__':
 	tf.app.run()
