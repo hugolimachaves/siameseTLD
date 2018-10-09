@@ -33,7 +33,8 @@ SEGUNDO_FRAME =2
 ULTIMO_FRAME = 354
 
 YML_FILE_NAME = 'parameters.yml'
-PARAMETERS_PATH = os.path.join(os.getcwd(),'dataset/exemplo/01-Light_video00001',YML_FILE_NAME)
+PARAMETERS_PATH = os.path.join('/home/hugo/Documents/Mestrado/vot2015/bag',YML_FILE_NAME)
+print('caminho do yml:',PARAMETERS_PATH)
 
 shared_library = CDLL('TLD/bin/Debug/libTLD.so')
 
@@ -322,10 +323,10 @@ def TLD_parte_1(generated, imgs_pil, frame):
 	is_candidates_empty = True
 	is_bb_tracker_empty = True
 
-	bb_list_negativo, is_neg_empty = read_data(array_object_model_negative, size_negative.value, frame, 1)
-	bb_list_positivo, is_pos_empty = read_data(array_object_model_positive, size_positive.value, frame, 2)
-	bb_list_candidate, is_candidates_empty = read_data(array_bb_candidates, size_candidates.value, frame, 3)
-	bb_single_element_tracker, is_bb_tracker_empty = read_data(array_bb_tracker, size_bb_tracker.value, frame, 4)
+	bb_list_negativo, _ = read_data(array_object_model_negative, size_negative.value, frame, 1)
+	bb_list_positivo, _ = read_data(array_object_model_positive, size_positive.value, frame, 2)
+	bb_list_candidate, _ = read_data(array_bb_candidates, size_candidates.value, frame, 3)
+	bb_single_element_tracker, _ = read_data(array_bb_tracker, size_bb_tracker.value, frame, 4)
 
 	'''
 	 candidates[ N ][ 5 ]
@@ -339,47 +340,48 @@ def TLD_parte_1(generated, imgs_pil, frame):
 
 	posicao = frame - 1
 
-	addModel(generated, bb_list_negativo, generalDescriptor.negative_obj_model_bb, generalDescriptor.negative_obj_model_features, imgs_pil[posicao])
-	addModel(generated, bb_list_positivo, generalDescriptor.positive_obj_model_bb, generalDescriptor.positive_obj_model_features, imgs_pil[posicao])
-	addModel(generated, bb_single_element_tracker, generalDescriptor.tracker_bb, generalDescriptor.tracker_features, imgs_pil[posicao])
+	is_neg_empty = addModel(generated, bb_list_negativo, generalDescriptor.negative_obj_model_bb, generalDescriptor.negative_obj_model_features, imgs_pil[posicao])
+	is_pos_empty = addModel(generated, bb_list_positivo, generalDescriptor.positive_obj_model_bb, generalDescriptor.positive_obj_model_features, imgs_pil[posicao])
+	is_bb_tracker_empty = addModel(generated, bb_single_element_tracker, generalDescriptor.tracker_bb, generalDescriptor.tracker_features, imgs_pil[posicao])
 	
 	list_feature = []
 	list_bb 	 = []
-	addModel(generated, bb_list_candidate, list_bb, list_feature, imgs_pil[posicao])
+	is_candidates_empty = addModel(generated, bb_list_candidate, list_bb, list_feature, imgs_pil[posicao])
 	generalDescriptor.setCandidates(list_bb, list_feature, frame)
 
 	# Calculo das distancias e similaridades para os candidatos
 
 	_ , features_candidates = generalDescriptor.getCandidates(frame)
-
-	for candidate in features_candidates:
-		distances_candidate = []
-		for positive in generalDescriptor.positive_obj_model_features:
-			dist = detSimilarity(candidate, positive)
-			distances_candidate.append(dist)	# Lista das distancias em relacao as features positivas
-			
-		generalDescriptor.positive_distances_candidates.append(distances_candidate)	# Lista das distancias para cada candidato
-		generalDescriptor.positive_similarity_candidates.append([convertSimilatiry(distance) for distance in distances_candidate])
+	if is_candidates_empty:
+		for candidate in features_candidates:
+			distances_candidate = []
+			for positive in generalDescriptor.positive_obj_model_features:
+				dist = detSimilarity(candidate, positive)
+				distances_candidate.append(dist)	# Lista das distancias em relacao as features positivas
+				
+			generalDescriptor.positive_distances_candidates.append(distances_candidate)	# Lista das distancias para cada candidato
+			generalDescriptor.positive_similarity_candidates.append([convertSimilatiry(distance) for distance in distances_candidate])
 		
-	for candidate in features_candidates:
-		distances_candidate = []
-		for negative in generalDescriptor.negative_obj_model_features:
-			dist = detSimilarity(candidate, negative)
-			distances_candidate.append(dist)	# Lista das distancias em relacao as features negativas
+		for candidate in features_candidates:
+			distances_candidate = []
+			for negative in generalDescriptor.negative_obj_model_features:
+				dist = detSimilarity(candidate, negative)
+				distances_candidate.append(dist)	# Lista das distancias em relacao as features negativas
 
-		generalDescriptor.negative_distances_candidates.append(distances_candidate)	# Lista das distancias para cada candidato
-		generalDescriptor.negative_similarity_candidates.append([convertSimilatiry(distance) for distance in distances_candidate])
+			generalDescriptor.negative_distances_candidates.append(distances_candidate)	# Lista das distancias para cada candidato
+			generalDescriptor.negative_similarity_candidates.append([convertSimilatiry(distance) for distance in distances_candidate])
 	
 	# Calculo das distancias e similaridades para a BB do candidato do Tracker
-	for positive in generalDescriptor.positive_obj_model_features:
-		dist = detSimilarity(generalDescriptor.tracker_features[LAST_ADDED], positive)
-		generalDescriptor.positive_distances_tracker_candidate.append(dist)	# Lista das distancias em relacao as features positivas
-		generalDescriptor.positive_similarity_tracker_candidate.append(convertSimilatiry(dist))
+	if is_bb_tracker_empty:
+		for positive in generalDescriptor.positive_obj_model_features:
+			dist = detSimilarity(generalDescriptor.tracker_features[LAST_ADDED], positive)
+			generalDescriptor.positive_distances_tracker_candidate.append(dist)	# Lista das distancias em relacao as features positivas
+			generalDescriptor.positive_similarity_tracker_candidate.append(convertSimilatiry(dist))
 
-	for negative in generalDescriptor.negative_obj_model_features:
-		dist = detSimilarity(generalDescriptor.tracker_features[LAST_ADDED], negative)
-		generalDescriptor.negative_distances_tracker_candidate.append(dist)	# Lista das distancias em relacao as features negativas
-		generalDescriptor.negative_similarity_tracker_candidate.append(convertSimilatiry(dist))
+		for negative in generalDescriptor.negative_obj_model_features:
+			dist = detSimilarity(generalDescriptor.tracker_features[LAST_ADDED], negative)
+			generalDescriptor.negative_distances_tracker_candidate.append(dist)	# Lista das distancias em relacao as features negativas
+			generalDescriptor.negative_similarity_tracker_candidate.append(convertSimilatiry(dist))
 
 def TLD_parte_2(generated, imgs_pil, frame):
 	
@@ -759,14 +761,18 @@ def main(_):
 	return
 
 def addModel(generated, bb_list, bb_acumulated_atribute, feature_acumulated_atribute, image):
+	is_empty = True
 	for bb in bb_list:
 		#print('bb: '.center(70,'#'))
 		#print(bb)
 		#print('type: ',type(bb[0]))
 		if(not (True in [math.isnan(item) for item in bb])):
+			is_empty = False
 			currentFeature = generated.getDescriptor(bb, image)
 			bb_acumulated_atribute.append(bb)
 			feature_acumulated_atribute.append(currentFeature)
+	
+	return is_empty
 
 if __name__=='__main__':
 	tf.app.run()
