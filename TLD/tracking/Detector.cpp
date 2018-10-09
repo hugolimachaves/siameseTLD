@@ -127,8 +127,10 @@ Candidate::~Candidate()
 	nn_img.release();
 }
 
-double modelSimilatiryRetrain(vector<ModelSample> model, Mat pattern, int &isin, float *similaridade){
-	if(model.empty()){
+double modelSimilatiryRetrain(vector<ModelSample> model, Mat pattern, int &isin, float *similaridade)
+{
+	if(model.empty())
+	{
 		isin = -1;
 		return 0.;
 	}
@@ -142,15 +144,18 @@ double modelSimilatiryRetrain(vector<ModelSample> model, Mat pattern, int &isin,
 	max_sim = similaridade[0];
 	max_pos = 0;
 
-	for(i = 1; i < (int)model.size(); i++){
+	for(i = 1; i < (int)model.size(); i++)
+	{
 		sim = similaridade[i];
-		if(sim > max_sim){
+		if(sim > max_sim)
+		{
 			max_sim = sim;
 			max_pos = i;
 		}
 	}
 
-	if(max_sim >= THE_SAME) isin = max_pos;
+	if(max_sim >= THE_SAME) 
+		isin = max_pos;
 
 	return max_sim;
 }
@@ -223,8 +228,8 @@ double relativeSimilarityRetrain(Mat pattern, int &isin_p, int &isin_n, float *s
 	return sim;
 }
 
-void fastSimilarity(Mat nn_img, double &relative_sim, double &conservative_sim, int &isin_p, int &isin_n, int cont_candidates,
-					float *similaridade_positiva_candidates, float *similaridade_negativa_candidates){
+void fastSimilarity(Mat nn_img, double &relative_sim, double &conservative_sim, int &isin_p, int &isin_n, int cont_candidates,float *similaridade_positiva_candidates, float *similaridade_negativa_candidates)
+{
 	int i = 0, max_pos = -1,
 		pos_size = ceil(object_model[1].size()/2.);
 	double 	pos_sim = 0.,
@@ -234,43 +239,55 @@ void fastSimilarity(Mat nn_img, double &relative_sim, double &conservative_sim, 
 	vector<ModelSample>::iterator sample;
 
 	isin_p = isin_n = -1;
-	if(object_model[1].empty()){
+	if(object_model[1].empty())
+	{
 		relative_sim = conservative_sim = 0.;
 		return;
 	}
-	if(object_model[0].empty()){
+	if(object_model[0].empty())
+	{
 		relative_sim = conservative_sim = 1.;
 		return;
 	}
 
 	//Amostras positivas
 	int sim_position = cont_candidates * object_model[1].size();
-	for(i = 0; i < (int)object_model[1].size(); i++){
+	for(i = 0; i < (int)object_model[1].size(); i++)
+	{
 		sim = similaridade_positiva_candidates[sim_position];
 		sim_position++;
 
-		if(sim > pos_sim){
+		if(sim > pos_sim)
+		{
 			pos_sim = sim;
 			max_pos = i;
 		}
-		if(i < pos_size && sim > earl_sim) earl_sim = sim;
+		if(i < pos_size && sim > earl_sim) 
+			earl_sim = sim;
 	}
-	if(pos_sim >= THE_SAME) isin_p = max_pos;
+	
+	// TODO: verificar essa condição para as redes siamesas. Provavelmente esse valor sera revisto
+	
+	if(pos_sim >= THE_SAME) 
+		isin_p = max_pos; 
 
 	max_pos = -1;
 
 	//Amostras negativas
 	sim_position = cont_candidates * object_model[0].size();
-	for(i = 0; i < (int)object_model[0].size(); i++){
+	for(i = 0; i < (int)object_model[0].size(); i++)
+	{
 		sim = similaridade_negativa_candidates[sim_position];
 		sim_position++;
 
-		if(sim > neg_sim){
+		if(sim > neg_sim)
+		{
 			neg_sim = sim;
 			max_pos = i;
 		}
 	}
-	if(neg_sim > THE_SAME) isin_n = max_pos;
+	if(neg_sim > THE_SAME) 
+		isin_n = max_pos;
 
 	/*
 	if(pos_sim + neg_sim != 0) relative_sim = pos_sim / (pos_sim + neg_sim);
@@ -824,7 +841,6 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
 					object_model[1].push_back(*sample);
 					///NOTE: minhas alterações
 					unnorm_object_model[1].push_back(*unnorm_sample);
-					std::cout << "PUSH BACK POSITIVE" << std::endl;
 					///end
 				}
 				else{
@@ -836,8 +852,8 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
 				if(show) addSample((*sample).image, 1, isin_p);
 			}
 		}
-		else{
-			std::cout << "ENTROU ELSE" << std::endl;
+		else
+		{
 			sample = bad_samples.begin() + (*index) - g_size;
 			///NOTE: minhas alterações
 			 unnorm_sample = bad_windows.begin() + (*index) - g_size;
@@ -849,7 +865,6 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
 				object_model[0].push_back(*sample);
 				///NOTE: minhas alterações
 				unnorm_object_model[0].push_back(*unnorm_sample);
-				std::cout << "PUSH BACK NEGATIVE" << std::endl;
 				///end
 				if(show)  addSample((*sample).image, 0, -1);
 			}
@@ -895,8 +910,6 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
 
 		obj += 1;
 	}
-
-	std::cout << "Positive Obj Model [C++]: " << array_object_model_positive[0] << " " << array_object_model_positive[1] << " " << array_object_model_positive[2] << " " << array_object_model_positive[3] << std::endl;
 
 	indexes.clear();
 }
@@ -1062,8 +1075,6 @@ bool Retrain(Mat frame, BoundingBox &position, float *similaridade_positiva_bb_t
              float *array_good_windows_hull, int *size_good_windows_hull){
 
 	clock_t start_g = clock();
-
-	std::cout << "unnorm_object_model[0].size(): " << unnorm_object_model[0].size() << std::endl;
 
 	unnorm_object_model_clear();
 
@@ -1330,7 +1341,6 @@ void ensembleClassifier(float *array_bb_candidates, int *size_candidates, float 
 		array_bb_candidates[i+2] = widthBB (scanning_windows[sw_index]);
 		array_bb_candidates[i+3] = heightBB(scanning_windows[sw_index]);
 
-		std::cout << "Candidate " << i/4 << " [C++]: " << array_bb_candidates[i] << " " << array_bb_candidates[i+1] << " " << array_bb_candidates[i+2] << " " << array_bb_candidates[i+3] << std::endl;
 		i += 4;
 	}
 
