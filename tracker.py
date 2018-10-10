@@ -282,18 +282,18 @@ def init_TLD_in_siameseFC(generated, imgs_pil, frame=1):
 	print('\nFrame de entrada: '+ str(frame)+ ' Frame de retorno: ' + str(retorno_frame.value) + '\n')
 	assert (frame == retorno_frame.value), "Conflito nos frames"
 
-	bb_list_negativo, is_neg_empty = read_data(array_object_model_negative, size_negative.value, frame, 1)
-	bb_list_positivo, is_pos_empty = read_data(array_object_model_positive, size_positive.value, frame, 2)
-	bb_list_good_window, is_good_window_empty = read_data(array_good_windows, size_good_windows.value, frame)
-	bb_good_windows_hull, is_good_hull_empty = read_data(array_good_windows_hull, size_good_windows_hull.value, frame)
+	bb_list_negativo, _ 	= read_data(array_object_model_negative, size_negative.value, frame, 1)
+	bb_list_positivo, _ 	= read_data(array_object_model_positive, size_positive.value, frame, 2)
+	bb_list_good_window, _	= read_data(array_good_windows, size_good_windows.value, frame)
+	bb_good_windows_hull, _	= read_data(array_good_windows_hull, size_good_windows_hull.value, frame)
 
+	'''
 	print('lista de positivo:')
 	print(bb_list_positivo)
 	print('lista de negativo')
 	print(bb_list_negativo)
 	print('fim')
-	
-	
+	'''
 	
 	addModel(generated, bb_list_negativo,	  generalDescriptor.negative_obj_model_bb, generalDescriptor.negative_obj_model_features, imgs_pil[POSICAO_PRIMEIRO_FRAME])
 	addModel(generated, bb_list_positivo,	  generalDescriptor.positive_obj_model_bb, generalDescriptor.positive_obj_model_features, imgs_pil[POSICAO_PRIMEIRO_FRAME]) 
@@ -334,18 +334,18 @@ def TLD_parte_1(generated, imgs_pil, frame):
 	is_candidates_empty = True
 	is_bb_tracker_empty = True
 
-	bb_list_negativo, _ = read_data(array_object_model_negative, size_negative.value, frame, 1)
-	bb_list_positivo, _ = read_data(array_object_model_positive, size_positive.value, frame, 2)
-	bb_list_candidate, _ = read_data(array_bb_candidates, size_candidates.value, frame, 3)
+	bb_list_negativo, 		   _ = read_data(array_object_model_negative, size_negative.value, frame, 1)
+	bb_list_positivo, 		   _ = read_data(array_object_model_positive, size_positive.value, frame, 2)
+	bb_list_candidate,		   _ = read_data(array_bb_candidates, size_candidates.value, frame, 3)
 	bb_single_element_tracker, _ = read_data(array_bb_tracker, size_bb_tracker.value, frame, 4)
 
-
-
+	'''
 	print('\nlista de positivo:')
 	print(bb_list_positivo)
 	print('lista de negativo')
 	print(bb_list_negativo)
 	print('fim')
+	'''
 
 	'''
 	 candidates[ N ][ 5 ]
@@ -371,7 +371,7 @@ def TLD_parte_1(generated, imgs_pil, frame):
 	# Calculo das distancias e similaridades para os candidatos
 
 	_ , features_candidates = generalDescriptor.getCandidates(frame)
-	if is_candidates_empty:
+	if not is_candidates_empty:
 		for candidate in features_candidates:
 			distances_candidate = []
 			for positive in generalDescriptor.positive_obj_model_features:
@@ -391,7 +391,7 @@ def TLD_parte_1(generated, imgs_pil, frame):
 			generalDescriptor.negative_similarity_candidates.append([convertSimilatiry(distance) for distance in distances_candidate])
 	
 	# Calculo das distancias e similaridades para a BB do candidato do Tracker
-	if is_bb_tracker_empty:
+	if not is_bb_tracker_empty:
 		for positive in generalDescriptor.positive_obj_model_features:
 			dist = detSimilarity(generalDescriptor.tracker_features[LAST_ADDED], positive)
 			generalDescriptor.positive_distances_tracker_candidate.append(dist)	# Lista das distancias em relacao as features positivas
@@ -411,6 +411,7 @@ def TLD_parte_2(generated, imgs_pil, frame):
 		print('Negative object model'.center(70,'-'))
 		print(generalDescriptor.negative_obj_model_bb)
 		print('='.center(70,'='))
+
 	#max_sim_pos_candidates = max(generalDescriptor.positive_similarity_candidates)
 
 	if(len(generalDescriptor.positive_similarity_tracker_candidate)): # Verifica se a lista esta vazia
@@ -420,7 +421,6 @@ def TLD_parte_2(generated, imgs_pil, frame):
 	if(len(generalDescriptor.negative_similarity_tracker_candidate)): # Verifica se a lista esta vazia
 		max_sim_negative_tracker_candidate = max(generalDescriptor.negative_similarity_tracker_candidate)
 		pos_sim_negative_tracker_candidate = generalDescriptor.negative_similarity_tracker_candidate.index(max_sim_negative_tracker_candidate)
-
 
 	lista_positive_simi_candidates = list( np.asarray( generalDescriptor.positive_similarity_candidates ).reshape(-1) )
 	lista_negative_simi_candidates = list( np.asarray( generalDescriptor.negative_similarity_candidates ).reshape(-1) )
