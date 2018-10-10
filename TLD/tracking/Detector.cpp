@@ -64,8 +64,10 @@ vector<ModelSample>	good_samples,						//Amostras positivas prontas para o trein
 BoundingBox			good_windows_hull;					//Envoltoria das amostras positivas
 vector<Candidate> 	candidates;							//Amostras candidatas
 
-ModelSample::ModelSample(){
-	for(int i = 0; i < NUM_FERNS; i++) code[i] = 0;
+ModelSample::ModelSample()
+{
+	for(int i = 0; i < NUM_FERNS; i++) 
+		code[i] = 0;
 }
 
 ModelSample::~ModelSample(){
@@ -679,7 +681,8 @@ void setNegativeSamples(Mat frame){
 }
 
 //Medidas dos ferns
-double votes(int code[NUM_FERNS]){
+double votes(int code[NUM_FERNS])
+{
 	double average = 0.;
 	for (int fern = 0; fern < NUM_FERNS; fern++)
 		average += posteriors[fern*NUM_CODE + code[fern]];
@@ -791,10 +794,9 @@ void addSample(Mat normalized_sample, int label, int isin){
 
 //Treina nearest neighbor. Se ens_filter = true, utiliza para o treinamento apenas amostras que passam pelo comitê
 void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
-			 float *array_object_model_negative, int *size_negative, bool ens_filter = false){
-	int g_size = good_samples.size(),
-		b_size = bad_samples.size(),
-		isin_p, isin_n, //ignorados
+			 float *array_object_model_negative, int *size_negative, bool ens_filter = false)
+{
+	int g_size = good_samples.size(),b_size = bad_samples.size(),isin_p, isin_n, //ignorados
 		vote_pointer = 0;
 	double conf, vote;
 	vector<int> indexes(g_size);
@@ -804,12 +806,15 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
 	vector<BoundingBox>::iterator unnorm_sample;
 	SortElement *vote_list = (SortElement*)malloc(sizeof(SortElement)*b_size);
 
-	for(int i = 0; i < g_size; i++) indexes[i] = i;
+	for(int i = 0; i < g_size; i++) 
+		indexes[i] = i;
 
 	sample = bad_samples.end()-1;
-	for(int i = b_size - 1; i >= 0; i--, sample--){
+	for(int i = b_size - 1; i >= 0; i--, sample--)
+	{
 		vote = votes((*sample).code);
-		if(ens_filter && !ENS_TEST(vote)) continue; //Ignora amostras classificadas corretamente pelo comitê
+		if(ens_filter && !ENS_TEST(vote)) 
+			continue; //Ignora amostras classificadas corretamente pelo comitê
 		vote_list[vote_pointer].val = (float)vote;
 		vote_list[vote_pointer].index = i;
 		vote_pointer++;
@@ -827,8 +832,10 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
 	//random_shuffle(indexes.begin()+g_size, indexes.end()); //Permuta negativos
 	//random_shuffle(indexes.begin()+1, indexes.begin()+NUM_NEG_SAMPLE); //Permuta parte
 
-	for(index = indexes.begin(); index != indexes.end(); index++){
-		if(*index < g_size){
+	for(index = indexes.begin(); index != indexes.end(); index++)
+	{
+		if(*index < g_size)
+		{
 			sample = good_samples.begin() + (*index);
 			///NOTE: minhas alterações
 			unnorm_sample = good_windows.begin() + (*index);
@@ -836,14 +843,17 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
 			conf = relativeSimilarityTrain((*sample).nn_img, isin_p, isin_n);
 
 			//if(NN_TEST_MARGIN_P(conf)){ //Falsos negativos e fracos positivos
-			if(!NN_TEST(conf)){ //Falsos negativos
-				if(isin_p == -1 || isin_p == (int)object_model[1].size() - 1){
+			if(!NN_TEST(conf))
+			{ //Falsos negativos
+				if(isin_p == -1 || isin_p == (int)object_model[1].size() - 1)
+				{
 					object_model[1].push_back(*sample);
 					///NOTE: minhas alterações
 					unnorm_object_model[1].push_back(*unnorm_sample);
 					///end
 				}
-				else{
+				else
+				{
 					object_model[1].insert(object_model[1].begin() + isin_p + 1, *sample); //Insere depois da amostra similar
 					///NOTE: minhas alterações
 					unnorm_object_model[1].insert(unnorm_object_model[1].begin() + isin_p + 1, *unnorm_sample);
@@ -860,7 +870,8 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
 			///end
 			conf = relativeSimilarityTrain((*sample).nn_img, isin_p, isin_n);
 
-			if(NN_TEST_MARGIN_N(conf)){ //Falso positivo e fracos negativos
+			if(NN_TEST_MARGIN_N(conf))
+			{ //Falso positivo e fracos negativos
 			//if(NN_TEST(conf)){ //Falso positivo
 				object_model[0].push_back(*sample);
 				///NOTE: minhas alterações

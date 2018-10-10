@@ -15,6 +15,7 @@ from ctypes import *
 from sklearn.neighbors import KNeighborsClassifier
 
 DEBUG_PRINT_ARRAY = True
+MOSTRAR_OBJ_MODEL = True
 DIM_DESCRIPTOR = 256
 ONE_DIMENSION = 1
 ATOMIC_SIZE = 87
@@ -33,7 +34,9 @@ SEGUNDO_FRAME =2
 ULTIMO_FRAME = 354
 
 YML_FILE_NAME = 'parameters.yml'
-PARAMETERS_PATH = os.path.join('/home/hugo/Documents/Mestrado/vot2015/bag',YML_FILE_NAME)
+CAMINHO_EXEMPLO_VOT2015 = '/home/hugo/Documents/Mestrado/vot2015/bag'
+CAMINHO_EXEMPLO_DATASET_TLD = '/home/hugo/Documents/Mestrado/codigoRastreador/dataset/exemplo/01-Light_video00001'
+PARAMETERS_PATH = os.path.join(CAMINHO_EXEMPLO_DATASET_TLD,YML_FILE_NAME)
 print('caminho do yml:',PARAMETERS_PATH)
 
 shared_library = CDLL('TLD/bin/Debug/libTLD.so')
@@ -284,6 +287,14 @@ def init_TLD_in_siameseFC(generated, imgs_pil, frame=1):
 	bb_list_good_window, is_good_window_empty = read_data(array_good_windows, size_good_windows.value, frame)
 	bb_good_windows_hull, is_good_hull_empty = read_data(array_good_windows_hull, size_good_windows_hull.value, frame)
 
+	print('lista de positivo:')
+	print(bb_list_positivo)
+	print('lista de negativo')
+	print(bb_list_negativo)
+	print('fim')
+	
+	
+	
 	addModel(generated, bb_list_negativo,	  generalDescriptor.negative_obj_model_bb, generalDescriptor.negative_obj_model_features, imgs_pil[POSICAO_PRIMEIRO_FRAME])
 	addModel(generated, bb_list_positivo,	  generalDescriptor.positive_obj_model_bb, generalDescriptor.positive_obj_model_features, imgs_pil[POSICAO_PRIMEIRO_FRAME]) 
 	addModel(generated, bb_list_good_window,  generalDescriptor.good_windows_bb,	   generalDescriptor.good_windows_features,		  imgs_pil[POSICAO_PRIMEIRO_FRAME])
@@ -327,6 +338,14 @@ def TLD_parte_1(generated, imgs_pil, frame):
 	bb_list_positivo, _ = read_data(array_object_model_positive, size_positive.value, frame, 2)
 	bb_list_candidate, _ = read_data(array_bb_candidates, size_candidates.value, frame, 3)
 	bb_single_element_tracker, _ = read_data(array_bb_tracker, size_bb_tracker.value, frame, 4)
+
+
+
+	print('\nlista de positivo:')
+	print(bb_list_positivo)
+	print('lista de negativo')
+	print(bb_list_negativo)
+	print('fim')
 
 	'''
 	 candidates[ N ][ 5 ]
@@ -385,6 +404,13 @@ def TLD_parte_1(generated, imgs_pil, frame):
 
 def TLD_parte_2(generated, imgs_pil, frame):
 	
+	if(MOSTRAR_OBJ_MODEL):
+		print('\n')
+		print('Positive object model'.center(70,'+'))
+		print(generalDescriptor.positive_obj_model_bb)
+		print('Negative object model'.center(70,'-'))
+		print(generalDescriptor.positive_obj_model_bb)
+		print('='.center(70,'='))
 	#max_sim_pos_candidates = max(generalDescriptor.positive_similarity_candidates)
 
 	if(len(generalDescriptor.positive_similarity_tracker_candidate)): # Verifica se a lista esta vazia
