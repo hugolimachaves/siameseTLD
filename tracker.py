@@ -36,7 +36,7 @@ ULTIMO_FRAME = 354
 YML_FILE_NAME = 'parameters.yml'
 CAMINHO_EXEMPLO_VOT2015 = '/home/hugo/Documents/Mestrado/vot2015/bag'
 CAMINHO_EXEMPLO_DATASET_TLD = '/home/hugo/Documents/Mestrado/codigoRastreador/dataset/exemplo/01-Light_video00001'
-PARAMETERS_PATH = os.path.join(CAMINHO_EXEMPLO_DATASET_TLD,YML_FILE_NAME)
+PARAMETERS_PATH = os.path.join(CAMINHO_EXEMPLO_VOT2015,YML_FILE_NAME)
 print('caminho do yml:',PARAMETERS_PATH)
 
 shared_library = CDLL('TLD/bin/Debug/libTLD.so')
@@ -409,7 +409,7 @@ def TLD_parte_2(generated, imgs_pil, frame):
 		print('Positive object model'.center(70,'+'))
 		print(generalDescriptor.positive_obj_model_bb)
 		print('Negative object model'.center(70,'-'))
-		print(generalDescriptor.positive_obj_model_bb)
+		print(generalDescriptor.negative_obj_model_bb)
 		print('='.center(70,'='))
 	#max_sim_pos_candidates = max(generalDescriptor.positive_similarity_candidates)
 
@@ -780,7 +780,7 @@ def main(_):
 		br = tuple(np.round(rectPosition+targetSize).astype(int)[::-1])
 		imDraw = im.astype(np.uint8)
 		cv2.rectangle(imDraw, tl, br, (0, 255, 255), thickness=3)
-		cv2.imshow("tracking", imDraw)
+		cv2.imshow("tracking - siamese", imDraw)
 		cv2.waitKey(1)
 
 	print(time.time()-tic)

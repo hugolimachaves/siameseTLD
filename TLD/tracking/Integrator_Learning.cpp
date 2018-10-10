@@ -558,7 +558,8 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
                                 array_good_windows, size_good_windows, array_good_windows_hull, size_good_windows_hull);
 	}
 
-	if(_DEBUG_IL){
+	if(_DEBUG_IL)
+	{
 		char conf[30];
 		if(tracked){
 			Mat t_object;
@@ -567,6 +568,7 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 			resize(t_object, t_object, Size(200,200));
 			sprintf(conf, "%.2f", t_conf);
 			putText(t_object, conf, Point2f(15,15), FONT_HERSHEY_COMPLEX_SMALL, 0.7, Scalar(255.));
+			std::cout<<"Nao entrar aqui se desabled _DEBUG_IL"<<std::endl;
 			imshow(TRACKER_WINDOW, t_object);
 			t_object.release();
 		}
@@ -578,6 +580,7 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 			resize(d_object, d_object, Size(200,200));
 			sprintf(conf, "%.2f", max_d_conf);
 			putText(d_object, conf, Point2f(15,15), FONT_HERSHEY_COMPLEX_SMALL, 0.7, Scalar(255.));
+			std::cout<<"Nao entrar aqui se desabled _DEBUG_IL"<<std::endl;
 			imshow(DETECTOR_WINDOW, d_object);
 		}
 	}

@@ -72,6 +72,7 @@ string 	bb_path,video_path,init_path;
 //Inicializa captura: retorna true se inicializou com sucesso. path = null para webcam
 bool captureOpen(string path){
 	if(video_type == IMAGE_LIST){ //Armazena lista de imagens (caminhos)
+		std::cout<<"O caminho2 e: "<<path<<std::endl;
 		int list_size;
 		FILE *list_file = fopen(path.c_str(), "r");
 		if(!list_file) {
@@ -486,7 +487,10 @@ inline void show_save(Mat frame)
 	if(draw_bb && !isnan(bb[0]))
 		rectangle(frame, Point2d(bb[0], bb[1]), Point2d(bb[2], bb[3]), Scalar(255.0, 255.0, 255.0), 2.);
 	if(show)
+	{
+		std::cout<<"nao era pra entra aqui"<<std::endl;
 		imshow(WINDOW, frame);
+	}
 	if(save)
 	{
 		imwrite(name, frame);
@@ -566,6 +570,7 @@ void init_TLD(char *parameters_path, int* frame,
 	              array_good_windows, size_good_windows,
 	              array_good_windows_hull, size_good_windows_hull);
 
+
 		//initSIFT(curr_frame, bb);
 		initJudge(curr_frame, bb, valid, conf, show);
 		train = false;
@@ -577,6 +582,7 @@ void init_TLD(char *parameters_path, int* frame,
 	//Prepara janela e menu
 	if(show)
 	{
+		std::cout<<"nao era pra entrar aqui se show == False - abrindo a janela Tracker"<<std::endl;
 		CLEAR();
 		//help();
 		namedWindow(WINDOW, CV_WINDOW_FREERATIO);
@@ -664,9 +670,7 @@ void TLD_part_2(float *similaridade_positiva_candidates, float *similaridade_neg
                 float *array_good_windows_hull, int *size_good_windows_hull){
 	clock_t start_t, end_t;
 	double elapsed;
-    unnorm_object_model_clear();
-
-	std::cout << "has_bb: " << has_bb << "\tenable_detect: " << enable_detect << std::endl;
+    //unnorm_object_model_clear();
 
 	if(has_bb)
 	{

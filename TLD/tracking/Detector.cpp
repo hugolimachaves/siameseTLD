@@ -66,7 +66,7 @@ vector<Candidate> 	candidates;							//Amostras candidatas
 
 ModelSample::ModelSample()
 {
-	for(int i = 0; i < NUM_FERNS; i++) 
+	for(int i = 0; i < NUM_FERNS; i++)
 		code[i] = 0;
 }
 
@@ -156,7 +156,7 @@ double modelSimilatiryRetrain(vector<ModelSample> model, Mat pattern, int &isin,
 		}
 	}
 
-	if(max_sim >= THE_SAME) 
+	if(max_sim >= THE_SAME)
 		isin = max_pos;
 
 	return max_sim;
@@ -264,14 +264,14 @@ void fastSimilarity(Mat nn_img, double &relative_sim, double &conservative_sim, 
 			pos_sim = sim;
 			max_pos = i;
 		}
-		if(i < pos_size && sim > earl_sim) 
+		if(i < pos_size && sim > earl_sim)
 			earl_sim = sim;
 	}
-	
+
 	// TODO: verificar essa condição para as redes siamesas. Provavelmente esse valor sera revisto
-	
-	if(pos_sim >= THE_SAME) 
-		isin_p = max_pos; 
+
+	if(pos_sim >= THE_SAME)
+		isin_p = max_pos;
 
 	max_pos = -1;
 
@@ -288,7 +288,7 @@ void fastSimilarity(Mat nn_img, double &relative_sim, double &conservative_sim, 
 			max_pos = i;
 		}
 	}
-	if(neg_sim > THE_SAME) 
+	if(neg_sim > THE_SAME)
 		isin_n = max_pos;
 
 	/*
@@ -507,6 +507,8 @@ void setOverlapingWindows(BoundingBox position, float *array_good_windows, int *
 				good_windows_hull[2] = scanning_windows[index][2];
 			if(scanning_windows[index][3] > good_windows_hull[3])
 				good_windows_hull[3] = scanning_windows[index][3];
+
+
 		}
 		else break;
 	}
@@ -796,6 +798,7 @@ void addSample(Mat normalized_sample, int label, int isin){
 void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
 			 float *array_object_model_negative, int *size_negative, bool ens_filter = false)
 {
+    std::cout<<"entrou no nnTrain"<<std::endl;
 	int g_size = good_samples.size(),b_size = bad_samples.size(),isin_p, isin_n, //ignorados
 		vote_pointer = 0;
 	double conf, vote;
@@ -806,14 +809,14 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
 	vector<BoundingBox>::iterator unnorm_sample;
 	SortElement *vote_list = (SortElement*)malloc(sizeof(SortElement)*b_size);
 
-	for(int i = 0; i < g_size; i++) 
+	for(int i = 0; i < g_size; i++)
 		indexes[i] = i;
 
 	sample = bad_samples.end()-1;
 	for(int i = b_size - 1; i >= 0; i--, sample--)
 	{
 		vote = votes((*sample).code);
-		if(ens_filter && !ENS_TEST(vote)) 
+		if(ens_filter && !ENS_TEST(vote))
 			continue; //Ignora amostras classificadas corretamente pelo comitê
 		vote_list[vote_pointer].val = (float)vote;
 		vote_list[vote_pointer].index = i;
@@ -834,8 +837,10 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
 
 	for(index = indexes.begin(); index != indexes.end(); index++)
 	{
+        std::cout<<"entrou no for"<<std::endl;
 		if(*index < g_size)
 		{
+		std::cout<<"entrou no if mais externo ainda"<<std::endl;
 			sample = good_samples.begin() + (*index);
 			///NOTE: minhas alterações
 			unnorm_sample = good_windows.begin() + (*index);
@@ -845,11 +850,14 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive,
 			//if(NN_TEST_MARGIN_P(conf)){ //Falsos negativos e fracos positivos
 			if(!NN_TEST(conf))
 			{ //Falsos negativos
+
+                std::cout<<"entrou no if externo"<<std::endl;
 				if(isin_p == -1 || isin_p == (int)object_model[1].size() - 1)
 				{
 					object_model[1].push_back(*sample);
 					///NOTE: minhas alterações
 					unnorm_object_model[1].push_back(*unnorm_sample);
+					std::cout<<"\n\n\n\bounding box para o object model positivo:\n\n\n "<<(unnorm_sample[0][0])<<std::endl;
 					///end
 				}
 				else
@@ -944,6 +952,7 @@ void Train(Mat frame, BoundingBox &position, bool show,
 	dataset_p = Mat(20*DEFAULT_PATCH_SIZE, 20*DEFAULT_PATCH_SIZE, frame.type(), Scalar(255.)); //Imagem vazia e branca. Capacidade: 400 amostras
 	dataset_n = Mat(20*DEFAULT_PATCH_SIZE, 20*DEFAULT_PATCH_SIZE, frame.type(), Scalar(255.));
 
+    std::cout<<"Var: "<<frame_width<<" "<<frame_height<<" "<<bb_width<<" "<<bb_height<<std::endl;
 	scanningWindows(frame_width, frame_height, bb_width, bb_height);
 	setFeatures();
 	setOverlapingWindows(position,
@@ -975,12 +984,15 @@ void Train(Mat frame, BoundingBox &position, bool show,
 	nnTrain(show, array_object_model_positive, size_positive,
 			array_object_model_negative, size_negative, true);
 
+
 	good_windows.clear();
 	bad_windows.clear();
 	good_samples.clear();
 	bad_samples.clear();
 
-	if(show) {
+	if(show)
+	{
+		std::cout<<"Nao entrar aqui se desabled show"<<std::endl;
 		imshow(POSITIVE_WINDOW, dataset_p);
 		imshow(NEGATIVE_WINDOW, dataset_n);
 	}
@@ -1087,7 +1099,7 @@ bool Retrain(Mat frame, BoundingBox &position, float *similaridade_positiva_bb_t
 
 	clock_t start_g = clock();
 
-	unnorm_object_model_clear();
+	//unnorm_object_model_clear();
 
 	float 	frame_width = frame.size().width,
 			frame_height = frame.size().height,
@@ -1189,7 +1201,9 @@ bool Retrain(Mat frame, BoundingBox &position, float *similaridade_positiva_bb_t
 	bad_samples.clear();
 	good_samples.clear();
 
-	if(show) {
+	if(show)
+	{
+		std::cout<<"Nao entrar aqui se desabled show"<<std::endl;
 		imshow(POSITIVE_WINDOW, dataset_p);
 		imshow(NEGATIVE_WINDOW, dataset_n);
 	}
