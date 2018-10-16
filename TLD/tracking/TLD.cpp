@@ -72,7 +72,6 @@ string 	bb_path,video_path,init_path;
 //Inicializa captura: retorna true se inicializou com sucesso. path = null para webcam
 bool captureOpen(string path){
 	if(video_type == IMAGE_LIST){ //Armazena lista de imagens (caminhos)
-		std::cout<<"O caminho2 e: "<<path<<std::endl;
 		int list_size;
 		FILE *list_file = fopen(path.c_str(), "r");
 		if(!list_file) {
@@ -122,6 +121,7 @@ void captureClose()
 //Copia valor da bounding box inicial para a atual
 void resetBB()
 {
+	std::cout<<"C++ - entrou resetBB - TLD"<<std::endl;
 	if(!isnan(init_bb[0]))
 	{
 		bb[0] = init_bb[0];
@@ -137,6 +137,7 @@ void resetBB()
 //Pega próximo frame em tons de cinza ou colorido (grayscale) e se repeat for igual a true a função reinicia quando a captura chega ao fim ou a tecla de reset é pressionada.
 void nextFrame(Mat *frame, bool repeat, bool grayscale)
 {
+	std::cout<<"\nC++ - entrou nextFrame - TLD"<<std::endl;
 	reset = false;
 	frame->release();
 
@@ -439,6 +440,8 @@ void printComponents(int valid, int conf)
 //Pega primeira bounding box no arquivo de inicialização ou inicia vídeo no pause para que o usuário selecione o objeto
 void initBB(string init_path, int width, int height)
 {
+	std::cout<<"C++ - entrou initBB - TLD"<<std::endl;
+
 	if(init_path.c_str())
 	{
 		FILE *init = fopen(init_path.c_str(), "r");
@@ -488,7 +491,6 @@ inline void show_save(Mat frame)
 		rectangle(frame, Point2d(bb[0], bb[1]), Point2d(bb[2], bb[3]), Scalar(255.0, 255.0, 255.0), 2.);
 	if(show)
 	{
-		std::cout<<"nao era pra entra aqui"<<std::endl;
 		imshow(WINDOW, frame);
 	}
 	if(save)
@@ -531,7 +533,9 @@ void init_TLD(char *parameters_path, int* frame,
 			  float *array_object_model_positive, int *size_positive,
 			  float *array_object_model_negative, int *size_negative,
               float *array_good_windows, int *size_good_windows,
-              float *array_good_windows_hull, int *size_good_windows_hull){
+              float *array_good_windows_hull, int *size_good_windows_hull)
+{
+	std::cout<<"C++ - entrou init_TLD - TLD"<<std::endl;
 
 	//Inicializa parametros alteraveis pelo usuario
 	if(!readParameters(parameters_path, window_size, valid, conf, bb_path, video_path, init_path, repeat_video, print_status))
@@ -562,7 +566,6 @@ void init_TLD(char *parameters_path, int* frame,
 			cout << "Could not create bounding box file" << endl;
 			return;
 		}
-
 		if(enable_detect)
 			Train(curr_frame, bb, show,
 				  array_object_model_positive, size_positive,
@@ -582,7 +585,6 @@ void init_TLD(char *parameters_path, int* frame,
 	//Prepara janela e menu
 	if(show)
 	{
-		std::cout<<"nao era pra entrar aqui se show == False - abrindo a janela Tracker"<<std::endl;
 		CLEAR();
 		//help();
 		namedWindow(WINDOW, CV_WINDOW_FREERATIO);
@@ -600,9 +602,11 @@ void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
 				float *bb_tracker, int *size_bb_tracker){
 	clock_t start_t, end_t;
 	double elapsed;
+	std::cout<<"\nC++ - entrou TLD_part_1"<<std::endl;
 	unnorm_object_model_clear();
 
-	if(!pause_cap){
+	if(!pause_cap)
+	{
 		nextFrame(&next_frame, repeat_video, true);
 		if(next_frame.empty()){
 			if(repeat_video)
@@ -612,20 +616,24 @@ void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
 		//PRINT_STATUS;
 
 		//Se resetou só tem o primeiro frame, precisa pegar o segundo
-		if(!reset){
+		if(!reset)
+		{
 			tBB[0] = bb[0];
 			tBB[1] = bb[1];
 			tBB[2] = bb[2];
 			tBB[3] = bb[3];
 			tracked = detected = final_bb = false;
-
-			if(has_bb){
-				if(enable_track && !isnan(tBB[0])){
+			std::cout<<"Era para ter entrado nessa parte, pois !reset"<<std::endl;
+			if(has_bb)// se ta tudo certo, ja entra aqui...
+			{
+				std::cout<<"Se ja tinha uma BB inicial era pra entrar aqui..."<<std::endl;
+				if(enable_track && !isnan(tBB[0]))
+				{
 					start_t = clock();
 					tracked = Track(curr_frame, next_frame, tBB, show?draw_flow:DISABLED, filter, detect_failure, window_size);
 					end_t = clock();
 					elapsed = (double)(end_t - start_t)/CLOCKS_PER_SEC;
-
+					//pega a saida do tracker
 					bb_tracker[0] = tBB[0] + widthBB (tBB) / 2;
 					bb_tracker[1] = tBB[1] + heightBB(tBB) / 2;
 					bb_tracker[2] = widthBB (tBB);
@@ -633,9 +641,13 @@ void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
 
 					*size_bb_tracker = 4;
 				}
-				if(enable_detect){
+				std::cout<<"c++ enable_detect: "<<enable_detect<<std::endl;
+				if(enable_detect)
+				{
 					start_t = clock();
 					//char* saidaTemplates = "aas";
+					std::cout<<"C++: array_obj_model_positive"<<*(array_object_model_positive)<<std::endl;
+					std::cout<<"C++: array_obj_model_negative"<<*(array_object_model_negative)<<std::endl;
 					detected = Detect_part_1(next_frame, frame_count/*, strSaidaTemplates, saidaTemplates*/,
 											 array_bb_candidates, size_candidates,
 											 array_object_model_positive, size_positive,
@@ -670,6 +682,7 @@ void TLD_part_2(float *similaridade_positiva_candidates, float *similaridade_neg
                 float *array_good_windows_hull, int *size_good_windows_hull){
 	clock_t start_t, end_t;
 	double elapsed;
+	std::cout<<"\nC++ - entrou TLD_part_2"<<std::endl;
     //unnorm_object_model_clear();
 
 	if(has_bb)
@@ -686,6 +699,20 @@ void TLD_part_2(float *similaridade_positiva_candidates, float *similaridade_neg
 		}
 
 		start_t = clock();
+
+		//printar d_positions
+		vector<BoundingBox>::iterator it;
+		for(it = d_positions.begin(); it != d_positions.end(); it++ )
+		{
+
+			std::cout<<"\nC++ - posicoes: "<<std::endl;
+			for (int innerIt = 0; innerIt < 4; innerIt++)
+			{
+				std::cout<<it->at(innerIt)<<std::endl;
+			}
+
+		}
+
 		final_bb = IntegratorLearning(next_frame, tBB, d_positions, d_conf, tracked, detected, new_bb, object, enable_detect,
 									  similaridade_positiva_bb_tracker, similaridade_negativa_bb_tracker,
                                       array_good_windows, size_good_windows,

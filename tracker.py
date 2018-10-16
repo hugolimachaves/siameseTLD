@@ -34,7 +34,7 @@ SEGUNDO_FRAME =2
 ULTIMO_FRAME = 354
 
 
-NOME_VIDEO = 'ball1'
+NOME_VIDEO = 'racing'
 YML_FILE_NAME = 'parameters.yml'
 CAMINHO_EXEMPLO_VOT2015 = '/home/hugo/Documents/Mestrado/vot2015/' + NOME_VIDEO
 CAMINHO_EXEMPLO_DATASET_TLD = '/home/hugo/Documents/Mestrado/codigoRastreador/dataset/exemplo/01-Light_video00001'
