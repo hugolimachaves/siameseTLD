@@ -9,7 +9,8 @@ def configParams():
     params['crops_path'] = params['data_path']+"ILSVRC2015_CROPS/"
     params['crops_train'] = params['crops_path']+"Data/VID/train/"
     params['curation_path'] = "./ILSVRC15-curation/"
-    params['seq_base_path'] = "./demo-sequences/"
+    params['seq_base_path'] = "../../vot2015/"
+    #params['seq_base_path2'] = "../../alov_dataset/alo300/videos/01-Light/01-Light_video00001/"
     params['trainBatchSize'] = 8
     params['numScale'] = 3
 

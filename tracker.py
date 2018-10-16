@@ -33,8 +33,10 @@ PRIMEIRO_FRAME = 1
 SEGUNDO_FRAME =2
 ULTIMO_FRAME = 354
 
+
+NOME_VIDEO = 'ball1'
 YML_FILE_NAME = 'parameters.yml'
-CAMINHO_EXEMPLO_VOT2015 = '/home/hugo/Documents/Mestrado/vot2015/bag'
+CAMINHO_EXEMPLO_VOT2015 = '/home/hugo/Documents/Mestrado/vot2015/' + NOME_VIDEO
 CAMINHO_EXEMPLO_DATASET_TLD = '/home/hugo/Documents/Mestrado/codigoRastreador/dataset/exemplo/01-Light_video00001'
 PARAMETERS_PATH = os.path.join(CAMINHO_EXEMPLO_VOT2015,YML_FILE_NAME)
 print('caminho do yml:',PARAMETERS_PATH)
@@ -210,7 +212,7 @@ def read_data(array, array_size, frame, name=0):
 		if(name == 4):
 			print('\n\tBoundding Box do tracker ', end='')
 
-		print('array: ',end='')
+		print('array: ',*array ,end='')
 
 	if(array_size is not 0):
 		bb_pos = []
@@ -279,7 +281,7 @@ def init_TLD_in_siameseFC(generated, imgs_pil, frame=1):
 								   array_good_windows, byref(size_good_windows),
 								   array_good_windows_hull,  byref(size_good_windows_hull))
 	
-	print('\nFrame de entrada: '+ str(frame)+ ' Frame de retorno: ' + str(retorno_frame.value) + '\n')
+	print('\nPy - init-  Frame de entrada: '+ str(frame)+ ' Frame de retorno: ' + str(retorno_frame.value) + '\n')
 	assert (frame == retorno_frame.value), "Conflito nos frames"
 
 	bb_list_negativo, _ 	= read_data(array_object_model_negative, size_negative.value, frame, 1)
@@ -325,8 +327,8 @@ def TLD_parte_1(generated, imgs_pil, frame):
 									array_object_model_negative, byref(size_negative),
 									array_bb_tracker, byref(size_bb_tracker))
 	
-	print('\nFrame de entrada: '+ str(frame)+ ' Frame de retorno: ' + str(retorno_frame.value))
-	assert (frame == retorno_frame.value), "Conflito nos frames"
+	print('\nPy - part1 Frame de entrada: '+ str(frame)+ ' Frame de retorno: ' + str(retorno_frame.value))
+	assert (frame == retorno_frame.value), "Py - Conflito nos frames"
 
 	candidates = []
 	bb_tracker = []
@@ -369,7 +371,8 @@ def TLD_parte_1(generated, imgs_pil, frame):
 	generalDescriptor.setCandidates(list_bb, list_feature, frame)
 
 	# Calculo das distancias e similaridades para os candidatos
-
+	print('Py -tamanho de positive_obj_model_features: ', len(generalDescriptor.positive_obj_model_features))
+	print('Py -tamanho de negative_obj_model_features: ', len(generalDescriptor.negative_obj_model_features))
 	_ , features_candidates = generalDescriptor.getCandidates(frame)
 	if not is_candidates_empty:
 		for candidate in features_candidates:
@@ -431,8 +434,14 @@ def TLD_parte_2(generated, imgs_pil, frame):
 	if(len(lista_positive_simi_tracker_candidate)):
 		print('Pos_Global ', pos_sim_positive_tracker_candidate, ' Pos_List ', lista_positive_simi_tracker_candidate.index(max(lista_positive_simi_tracker_candidate)))
 
-	positive_simi_cand	= (c_float * len(generalDescriptor.positive_similarity_candidates))	(*lista_positive_simi_candidates)
-	negative_simi_cand	= (c_float * len(generalDescriptor.negative_similarity_candidates))	(*lista_negative_simi_candidates)
+	print('len(generalDescriptor.negative_similarity_candidates): ', len(generalDescriptor.negative_similarity_candidates))
+	#print('*lista_negative_simi_candidates: ', *lista_negative_simi_candidates)
+	print('len(generalDescriptor.positive_similarity_candidates)',len(generalDescriptor.positive_similarity_candidates))
+	#print('(*lista_positive_simi_candidates)', (*lista_positive_simi_candidates))
+	print('len: generalDescriptor.negative_obj_model_features: ',len(generalDescriptor.negative_obj_model_features))
+	print('shape: ',getLength(lista_negative_simi_candidates))
+	positive_simi_cand	= (c_float * getLength(lista_positive_simi_candidates))	(*lista_positive_simi_candidates)
+	negative_simi_cand	= (c_float * getLength(lista_negative_simi_candidates))	(*lista_negative_simi_candidates) # BUG: espaço reservado esta menor que o tamanho da lista que retorna
 	positive_simi_tracker = (c_float * len(generalDescriptor.positive_similarity_tracker_candidate)) (*lista_positive_simi_tracker_candidate)
 	negative_simi_tracker = (c_float * len(generalDescriptor.negative_similarity_tracker_candidate)) (*lista_negative_simi_tracker_candidate)
 
@@ -478,7 +487,7 @@ def getOpts(opts):
 	opts['stddev'] = 0.03
 	opts['subMean'] = False
 	opts['minimumSize'] = 87
-	opts['video'] = 'vot15_bag'
+	opts['video'] = NOME_VIDEO
 	opts['modelPath'] = './models/'
 	opts['modelName'] = opts['modelPath']+"model_tf.ckpt"
 	opts['summaryFile'] = './data_track/'+opts['video']+'_20170518'
@@ -532,13 +541,13 @@ def frameGenerator(vpath):
 	return imgs
 
 def loadVideoInfo(basePath, video):
-	videoPath = os.path.join(basePath, video, 'imgs')
+	videoPath = os.path.join(basePath, video)
 	groundTruthFile = os.path.join(basePath, video, 'groundtruth.txt')
 
 	groundTruth = open(groundTruthFile, 'r')
 	reader = groundTruth.readline()
 	region = [float(i) for i in reader.strip().split(",")]
-	print('Exemplo de variavel do tipo region: ', region)
+	
 	cx, cy, w, h = getAxisAlignedBB(region)
 	pos = [cy, cx]
 	targetSz = [h, w]
