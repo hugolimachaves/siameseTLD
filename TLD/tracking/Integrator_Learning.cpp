@@ -34,6 +34,8 @@
 #define N_D 1500 		//Número máximo de features de oclusão
 #define WIND_LENGHT 10 	//Quantidade de frames que as features de contexto são mantidas
 
+#define PRINT_DEBUG 1
+
 static 	int valid = 0, 	//0 = NCC, 1 = media, 2 = alien
 			conf = 0; 	//0 = NCC, 1 = media
 static bool init_fail = false,
@@ -47,7 +49,6 @@ static int t, d_size;  				// t = contador de frame, d_size = tamanho de d_t
 
 //Computa histograma de cores - Descritor de cor. Recebe descritor zerado nas posições do HC.
 void colorHistogram(Mat patch, Descriptor &descr){
-	std::cout<<"C++ - entrou colorhistogram - IL"<<std::endl;
 	uchar *row;
 	double *color_hist = &descr[HC_BEGIN], norm;
 
@@ -69,7 +70,6 @@ void colorHistogram(Mat patch, Descriptor &descr){
 // Sentido anti-horário começando pelo ponto(x+1,y) 	|5|*|1|
 // 														|6|7|8|
 void lbpHistogram(Mat patch, Descriptor &descr){
-	std::cout<<"C++ - entrou lbpHistogram - IL"<<std::endl;
 	int x_shift[8] = {1, 1, 0,-1,-1,-1, 0, 1}, //Sentido anti-horário começando pelo ponto (x+1,y)
 		y_shift[8] = {0,-1,-1,-1, 0, 1, 1, 1};
 	uchar threshold, color;
@@ -145,7 +145,6 @@ void polarCoordinates(Mat grad_x, Mat grad_y, Vector2D *polar_coordinates, int v
 
 //Computa histogram of oriented gradient - Descritor de forma
 void hog(Mat patch, Descriptor &descriptor){
-	std::cout<<"C++ - entrou hog - IL"<<std::endl;
 	Mat grad_x, grad_y;
 	Vector2D *polar_coordinates;
 	int vector_count;
@@ -186,7 +185,6 @@ void hog(Mat patch, Descriptor &descriptor){
 
 //Computa features do candidato a objeto ou do objeto inicial na posição position do frame
 void computeDescriptor(Mat frame, BoundingBox position, Descriptor &descriptor){
-	std::cout<<"C++ - entrou computeDescriptor - IL"<<std::endl;
 	Mat patch;
 	Size _size(widthBB(position), heightBB(position));
 	Point2f center(position[0] + _size.width/2., position[1] + _size.height/2.);
@@ -203,7 +201,6 @@ void computeDescriptor(Mat frame, BoundingBox position, Descriptor &descriptor){
 }
 
 double similarity(Descriptor d1, Descriptor d2){
-	std::cout<<"C++ - entrou similarity - IL"<<std::endl;
     if(HC + LBP + HOG == 0) return 0.;
 
 	int index_match;
@@ -228,7 +225,6 @@ double similarity(Descriptor d1, Descriptor d2){
 }
 
 double conservativeSimilarity(Descriptor descr){
-	std::cout<<"C++ - entrou conservativeSimilarity - IL"<<std::endl;
     int mid = (int)ceil(model.size()/2.);
     vector<Descriptor>::iterator    sample,
                                     middle = model.begin() + mid;
@@ -243,7 +239,6 @@ double conservativeSimilarity(Descriptor descr){
 }
 
 double modelSimilarity(Descriptor descr){
-	std::cout<<"C++ - entrou modelSimilarity - IL"<<std::endl;
     vector<Descriptor>::iterator    sample;
     double sim, max_sim = -1.;
 
@@ -258,7 +253,6 @@ double modelSimilarity(Descriptor descr){
 //Validação da resposta do tracker utilizando sift
 bool trackerValid(Mat frame, BoundingBox position, int &o_size){
 	BoundingBox new_position, margin;
-	std::cout<<"C++ - entrou trackerValid - IL"<<std::endl;
 	///NOTE: Idêntico ao initJudge.
 	//Correção das margens quando a bb está próxima das bordas do frame
 	margin[0] = MIN(position[0], MARGIN);
@@ -329,7 +323,6 @@ SiftFeature* cInit(SiftFeature *s_0, BoundingBox corrected_bb){
 				*c_pointer = NULL, //Percorre c_t
 				*aux_pointer; //Marca posições que devem ser apagadas
 	int c_count = 0;
-	std::cout<<"C++ - entrou cInit--> SiftFeature - IL"<<std::endl;
 	c_t = NULL;
 
 	for(s_pointer = s_0; s_pointer != NULL;){
@@ -361,7 +354,6 @@ SiftFeature* cInit(SiftFeature *s_0, BoundingBox corrected_bb){
 
 //Computa features do objeto original
 void initJudge(Mat frame, BoundingBox position, int _valid, int _conf, bool _show){
-	std::cout<<"C++ - entrou initJudge - IL"<<std::endl;
 	if(0 <= _valid && _valid <= 2 && 0 <= _conf && _conf <= 1){
 		valid = _valid;
 		conf = _conf;
@@ -414,7 +406,6 @@ void initJudge(Mat frame, BoundingBox position, int _valid, int _conf, bool _sho
 }
 
 int mostConfident(vector<BoundingBox> c_answers, vector<double> c_conf, double &max_d_conf, int &max_d_index, BoundingBox t_bb, double t_conf = -1.){
-	std::cout<<"C++ - entrou mostConfident - IL"<<std::endl;
 	max_d_conf = -1.;
 	max_d_index = -1;
 	if(c_conf.empty()) return -1;
@@ -441,7 +432,7 @@ int mostConfident(vector<BoundingBox> c_answers, vector<double> c_conf, double &
 }
 
 int mostConfident2(Mat frame, vector<BoundingBox> c_answers, double &max_d_conf, int &max_d_index, BoundingBox t_bb, Descriptor t_descr, double &t_sim){
-	std::cout<<"C++ - entrou mostConfident2  - IL"<<std::endl;
+
 	max_d_conf = t_sim = -1.;
 	max_d_index = -1;
 	if(c_answers.empty()) return -1;
@@ -473,10 +464,10 @@ int mostConfident2(Mat frame, vector<BoundingBox> c_answers, double &max_d_conf,
 
 bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detector_positions, vector<double> d_conf,
 						bool tracked, bool detected, BoundingBox &output, Mat &object, bool enable_detect,
-						float *similaridade_positiva_bb_tracker, float *similaridade_negativa_bb_tracker,
+						float *similaridade_positiva_bb_tracker, int *size_pos_tracker,
+						float *similaridade_negativa_bb_tracker, int *size_neg_tracker,
 			            float *array_good_windows, int *size_good_windows,
 			            float *array_good_windows_hull, int *size_good_windows_hull){
-	std::cout<<"C++ - entrou IntegratorLearning - IL"<<std::endl;
 	static bool tracker_valid = false;
 	t++;
 	output[0] = output[1] = output[2] = output[3] = NAN;
@@ -502,12 +493,16 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 			case 0: //NCC
 				SMOOTH(frame, blur_img);
 				normalize(frame, blur_img, t_bb, 0, 0, t_candidate.image, t_candidate.ens_img, t_candidate.nn_img);
-				t_conf = conservativeSimilarity(t_candidate.nn_img, similaridade_positiva_bb_tracker, similaridade_negativa_bb_tracker);
+
+				t_conf = conservativeSimilarity(t_candidate.nn_img, similaridade_positiva_bb_tracker, size_pos_tracker,
+                                                similaridade_negativa_bb_tracker, size_neg_tracker);
+
 				if(t_conf > NN_VALID) tracker_valid = true;
 			break;
 			case 1: //Media
 				computeDescriptor(frame, t_bb, t_descr);
 				t_conf = conservativeSimilarity(t_descr);
+
 				if(t_conf > NN_VALID) tracker_valid = true;
 			break;
 			case 2: //Alien
@@ -515,13 +510,28 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 			break;
 		}
 
-		if(detected){
+		if(PRINT_DEBUG)
+		{
+			std::cout<<"C++ t_conf in IntegratorLearning: "<<t_conf<<std::endl;
+			if(detected)
+			{
+				std::cout<<"detectado!"<<std::endl;
+			}
+			else
+			{
+				std::cout<<"NAO detectado!"<<std::endl;	
+			}
+		}
+
+		if(detected)
+		{
 			switch(conf){
 				case 0: //NCC
 					if(valid != 0){
 						SMOOTH(frame, blur_img);
 						normalize(frame, blur_img, t_bb, 0, 0, t_candidate.image, t_candidate.ens_img, t_candidate.nn_img);
-						t_conf = conservativeSimilarity(t_candidate.nn_img, similaridade_positiva_bb_tracker, similaridade_negativa_bb_tracker);
+						t_conf = conservativeSimilarity(t_candidate.nn_img, similaridade_positiva_bb_tracker, size_pos_tracker,
+                                                        similaridade_negativa_bb_tracker, size_neg_tracker);
 					}
 					most_confident = mostConfident(detector_positions, d_conf, max_d_conf, max_d_index, t_bb, t_conf);
 				break;
@@ -540,6 +550,7 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 			}
 		}
 	}
+
 	else{
 		tracker_valid = false;
 		if(detected){
@@ -565,8 +576,11 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 	std::cout << "tracker_valid: " << tracker_valid << std::endl;
 
 	if(tracker_valid && enable_detect){
-		tracker_valid = Retrain(frame, t_bb, similaridade_positiva_bb_tracker, similaridade_negativa_bb_tracker, show,
-                                array_good_windows, size_good_windows, array_good_windows_hull, size_good_windows_hull);
+		tracker_valid = Retrain(frame, t_bb,
+                                similaridade_positiva_bb_tracker, size_pos_tracker,
+                                similaridade_negativa_bb_tracker, size_neg_tracker, show,
+                                array_good_windows, size_good_windows,
+                                array_good_windows_hull, size_good_windows_hull);
 	}
 
 	if(_DEBUG_IL)

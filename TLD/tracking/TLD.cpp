@@ -121,7 +121,6 @@ void captureClose()
 //Copia valor da bounding box inicial para a atual
 void resetBB()
 {
-	std::cout<<"C++ - entrou resetBB - TLD"<<std::endl;
 	if(!isnan(init_bb[0]))
 	{
 		bb[0] = init_bb[0];
@@ -137,7 +136,6 @@ void resetBB()
 //Pega próximo frame em tons de cinza ou colorido (grayscale) e se repeat for igual a true a função reinicia quando a captura chega ao fim ou a tecla de reset é pressionada.
 void nextFrame(Mat *frame, bool repeat, bool grayscale)
 {
-	std::cout<<"\nC++ - entrou nextFrame - TLD"<<std::endl;
 	reset = false;
 	frame->release();
 
@@ -440,8 +438,6 @@ void printComponents(int valid, int conf)
 //Pega primeira bounding box no arquivo de inicialização ou inicia vídeo no pause para que o usuário selecione o objeto
 void initBB(string init_path, int width, int height)
 {
-	std::cout<<"C++ - entrou initBB - TLD"<<std::endl;
-
 	if(init_path.c_str())
 	{
 		FILE *init = fopen(init_path.c_str(), "r");
@@ -535,8 +531,6 @@ void init_TLD(char *parameters_path, int* frame,
               float *array_good_windows, int *size_good_windows,
               float *array_good_windows_hull, int *size_good_windows_hull)
 {
-	std::cout<<"C++ - entrou init_TLD - TLD"<<std::endl;
-
 	//Inicializa parametros alteraveis pelo usuario
 	if(!readParameters(parameters_path, window_size, valid, conf, bb_path, video_path, init_path, repeat_video, print_status))
 		return;
@@ -594,6 +588,8 @@ void init_TLD(char *parameters_path, int* frame,
 
 	printComponents(valid, conf);
 	*frame = frame_count;
+
+	unnorm_object_model_clear();
 }
 
 void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
@@ -602,8 +598,7 @@ void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
 				float *bb_tracker, int *size_bb_tracker){
 	clock_t start_t, end_t;
 	double elapsed;
-	std::cout<<"\nC++ - entrou TLD_part_1"<<std::endl;
-	unnorm_object_model_clear();
+	//unnorm_object_model_clear();
 
 	if(!pause_cap)
 	{
@@ -623,10 +618,9 @@ void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
 			tBB[2] = bb[2];
 			tBB[3] = bb[3];
 			tracked = detected = final_bb = false;
-			std::cout<<"Era para ter entrado nessa parte, pois !reset"<<std::endl;
 			if(has_bb)// se ta tudo certo, ja entra aqui...
 			{
-				std::cout<<"Se ja tinha uma BB inicial era pra entrar aqui..."<<std::endl;
+				//std::cout<<"Se ja tinha uma BB inicial era pra entrar aqui..."<<std::endl;
 				if(enable_track && !isnan(tBB[0]))
 				{
 					start_t = clock();
@@ -641,17 +635,16 @@ void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
 
 					*size_bb_tracker = 4;
 				}
-				std::cout<<"c++ enable_detect: "<<enable_detect<<std::endl;
 				if(enable_detect)
 				{
 					start_t = clock();
 					//char* saidaTemplates = "aas";
-					std::cout<<"C++: array_obj_model_positive"<<*(array_object_model_positive)<<std::endl;
-					std::cout<<"C++: array_obj_model_negative"<<*(array_object_model_negative)<<std::endl;
 					detected = Detect_part_1(next_frame, frame_count/*, strSaidaTemplates, saidaTemplates*/,
 											 array_bb_candidates, size_candidates,
 											 array_object_model_positive, size_positive,
 											 array_object_model_negative, size_negative);
+
+                    unnorm_object_model_clear();
 					end_t = clock();
 					elapsed = (double)(end_t - start_t)/CLOCKS_PER_SEC;
 					//printf("Detector Part 1 Elapsed: %.3lf s\n", elapsed);
@@ -676,14 +669,15 @@ void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
 	}
 }
 
-void TLD_part_2(float *similaridade_positiva_candidates, float *similaridade_negativa_candidates,
-				float *similaridade_positiva_bb_tracker, float *similaridade_negativa_bb_tracker,
-                float *array_good_windows, int *size_good_windows,
-                float *array_good_windows_hull, int *size_good_windows_hull){
+void TLD_part_2(float *similaridade_positiva_candidates, int* size_sim_pos_cand,
+                float *similaridade_negativa_candidates, int* size_sim_neg_cand,
+                float *similaridade_positiva_bb_tracker, int* size_sim_pos_tracker,
+                float *similaridade_negativa_bb_tracker, int* size_sim_neg_tracker,
+                float *array_good_windows,               int *size_good_windows,
+                float *array_good_windows_hull,          int *size_good_windows_hull){
 	clock_t start_t, end_t;
 	double elapsed;
-	std::cout<<"\nC++ - entrou TLD_part_2"<<std::endl;
-    //unnorm_object_model_clear();
+    unnorm_object_model_clear();
 
 	if(has_bb)
 	{
@@ -692,7 +686,8 @@ void TLD_part_2(float *similaridade_positiva_candidates, float *similaridade_neg
 			start_t = clock();
 			//char* saidaTemplates = "aas";
 			detected = Detect_part_2(next_frame, d_positions, d_conf, frame_count, /*strSaidaTemplates, saidaTemplates,*/
-									 similaridade_positiva_candidates, similaridade_negativa_candidates);
+									 similaridade_positiva_candidates, size_sim_pos_cand,
+									 similaridade_negativa_candidates, size_sim_neg_cand);
 			end_t = clock();
 			elapsed = (double)(end_t - start_t)/CLOCKS_PER_SEC;
 			//printf("Detector Part 2 Elapsed: %.3lf s\n", elapsed);
@@ -700,6 +695,7 @@ void TLD_part_2(float *similaridade_positiva_candidates, float *similaridade_neg
 
 		start_t = clock();
 
+        /*
 		//printar d_positions
 		vector<BoundingBox>::iterator it;
 		for(it = d_positions.begin(); it != d_positions.end(); it++ )
@@ -712,9 +708,11 @@ void TLD_part_2(float *similaridade_positiva_candidates, float *similaridade_neg
 			}
 
 		}
+		*/
 
 		final_bb = IntegratorLearning(next_frame, tBB, d_positions, d_conf, tracked, detected, new_bb, object, enable_detect,
-									  similaridade_positiva_bb_tracker, similaridade_negativa_bb_tracker,
+									  similaridade_positiva_bb_tracker, size_sim_pos_tracker,
+									  similaridade_negativa_bb_tracker, size_sim_neg_tracker,
                                       array_good_windows, size_good_windows,
                                       array_good_windows_hull, size_good_windows_hull);
 		end_t = clock();
@@ -731,6 +729,8 @@ void TLD_part_2(float *similaridade_positiva_candidates, float *similaridade_neg
 	bb[2] = new_bb[2];
 	bb[3] = new_bb[3];
 	fprintfBB(bb_file);
+
+    cout << "NEW BB TRACKER = [" << new_bb[0] << ", " << new_bb[1] << ", " << new_bb[2] << ", " << new_bb[3] << "]" << endl;
 
 	next_frame.copyTo(curr_frame);
 }

@@ -49,10 +49,11 @@ void Train(Mat frame, BoundingBox &position, bool show,
            float *array_good_windows, int *size_good_windows,
            float *array_good_windows_hull, int *size_good_windows_hull);
 
-bool Retrain(Mat frame, BoundingBox &position, float *similaridade_positiva_bb_tracker,
-			 float *similaridade_negativa_bb_tracker, bool show,
-             float *array_good_windows, int *size_good_windows,
-             float *array_good_windows_hull, int *size_good_windows_hull);
+bool Retrain(Mat frame, BoundingBox &position,
+             float *similaridade_positiva_bb_tracker, int *size_pos_tracker,
+			 float *similaridade_negativa_bb_tracker, int *size_neg_tracker, bool show,
+             float *array_good_windows,               int *size_good_windows,
+             float *array_good_windows_hull,          int *size_good_windows_hull);
 
 bool Detect_part_1(Mat frame, int frame_number, /*string saidaTemplates,*/
 				   float *array_bb_candidates, int *size_candidates,
@@ -60,7 +61,8 @@ bool Detect_part_1(Mat frame, int frame_number, /*string saidaTemplates,*/
 				   float *array_object_model_negative, int *size_negative);
 
 bool Detect_part_2(Mat frame, vector<BoundingBox> &detector_positions, vector<double> &d_conf, int frame_number,
-				   float *similaridade_positiva_candidates, float *similaridade_negativa_candidates);
+				   float *similaridade_positiva_candidates, int *size_pos_cand,
+				   float *similaridade_negativa_candidates, int *size_neg_cand);
 
 void DetClear();
 
@@ -68,6 +70,7 @@ void unnorm_object_model_clear();
 
 void normalize(Mat img, Mat blur_img, BoundingBox bb, float shift_x, float shift_y, Mat &sample, Mat &ens_img, Mat &nn_img);
 
-double conservativeSimilarity(Mat pattern, float *similaridade_positiva_bb_tracker, float *similaridade_negativa_bb_tracker);
+double conservativeSimilarity(Mat pattern, float *similaridade_positiva_bb_tracker, int *size_pos_tracker,
+                              float *similaridade_negativa_bb_tracker, int *size_neg_tracker);
 
 #endif // DETECTOR_HPP_INCLUDED

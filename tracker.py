@@ -30,8 +30,9 @@ RGB = 3
 POSICAO_PRIMEIRO_FRAME = 0
 POSICAO_SEGUNDO_FRAME = 1
 PRIMEIRO_FRAME = 1
-SEGUNDO_FRAME =2
+SEGUNDO_FRAME = 2
 ULTIMO_FRAME = 354
+K = 0.005
 
 
 NOME_VIDEO = 'racing'
@@ -145,7 +146,8 @@ class DeepDescription:
 generalDescriptor = DeepDescription()
 
 def convertSimilatiry(siameseDistance):
-	return 1.0 / (siameseDistance + 1.0) # retorna a distancia no TLD
+	return np.exp(- K * siameseDistance) # retorna a distancia no TLD
+	#return 1.0 / (siameseDistance + 1.0) # retorna a distancia no TLD
 	
 def getLength(element): # verifica o tamanho total de elementos em uma estrutura de dados de dimensoes arbitrarias
 	if isinstance(element, list):
@@ -190,11 +192,34 @@ def distCandidatesToTheModel(deep_features_candidates, isPositive=True):
 def detSimilarity(feature_a, feature_b):
 	dist = 0
 	if len(feature_a.shape) > 2:
-		feature_a = feature_a.reshape((max(feature_a.shape),ONE_DIMENSION))
+		feature_a = feature_a.reshape(-1)
 	if len(feature_b.shape) > 2:
-		feature_b = feature_b.reshape((max(feature_b.shape),ONE_DIMENSION))
+		feature_b = feature_b.reshape(-1)
 	for a, b in zip(feature_a, feature_b):
 		dist += (a - b) ** 2
+
+	'''
+	#Comparacao de duas features positivas para identificar o melhor K no convertSimilatiry
+	feature_1 = generalDescriptor.good_windows_features[-1].reshape(-1)
+	feature_2 = generalDescriptor.good_windows_features[-2].reshape(-1)
+
+	dist = 0
+	for a, b in zip(feature_1, feature_2):
+		#print('(a - b) ** 2: ', (a - b) ** 2,'\n')
+		dist += (a - b) ** 2
+	
+	print('\n\ndist: ',np.sqrt(dist))
+	print('convertSimilatiry: ',convertSimilatiry(float(np.sqrt(dist))))
+	#print('feature_1: ', feature_1.reshape(-1))
+	#print('feature_2: ', feature_2.reshape(-1))
+	'''
+
+	'''
+	print('feature_a: ', feature_a.reshape(-1))
+	print('feature_b: ', feature_b.reshape(-1))
+	print('feature_a - feature_b: ', feature_a.reshape(-1) - feature_b.reshape(-1))
+	print('dist: ', float(np.sqrt(dist)))
+	'''
 
 	return np.sqrt(dist)
 
@@ -212,18 +237,19 @@ def read_data(array, array_size, frame, name=0):
 		if(name == 4):
 			print('\n\tBoundding Box do tracker ', end='')
 
-		print('array: ',*array ,end='')
+		print('array: ',end='')
 
-	if(array_size is not 0):
+	if(array_size != 0):
 		bb_pos = []
 		for i in range(array_size):
-			bb_pos.append(array[i])
-
-			if(i%4==0 and i is not 0):
+			if((i%4==0) and (i != 0)):
 				bb_pos.append(frame)
 				bb_list.append(bb_pos)
 				bb_pos = []
-			if DEBUG_PRINT_ARRAY and name is not 0:
+
+			bb_pos.append(array[i])
+
+			if (DEBUG_PRINT_ARRAY) and (name != 0):
 				if i%4 == 0:
 					print('[', end='')
 					print(array[i],', ', end='')
@@ -365,6 +391,8 @@ def TLD_parte_1(generated, imgs_pil, frame):
 	is_pos_empty = addModel(generated, bb_list_positivo, generalDescriptor.positive_obj_model_bb, generalDescriptor.positive_obj_model_features, imgs_pil[posicao])
 	is_bb_tracker_empty = addModel(generated, bb_single_element_tracker, generalDescriptor.tracker_bb, generalDescriptor.tracker_features, imgs_pil[posicao])
 	
+	print('\nbb list negativo',bb_list_negativo)
+
 	list_feature = []
 	list_bb 	 = []
 	is_candidates_empty = addModel(generated, bb_list_candidate, list_bb, list_feature, imgs_pil[posicao])
@@ -379,19 +407,27 @@ def TLD_parte_1(generated, imgs_pil, frame):
 			distances_candidate = []
 			for positive in generalDescriptor.positive_obj_model_features:
 				dist = detSimilarity(candidate, positive)
-				distances_candidate.append(dist)	# Lista das distancias em relacao as features positivas
-				
-			generalDescriptor.positive_distances_candidates.append(distances_candidate)	# Lista das distancias para cada candidato
-			generalDescriptor.positive_similarity_candidates.append([convertSimilatiry(distance) for distance in distances_candidate])
+				distances_candidate.append(np.float(dist))	# Lista das distancias em relacao as features positivas
+			
+			if len(distances_candidate):
+				generalDescriptor.positive_distances_candidates.append(distances_candidate)	# Lista das distancias para cada candidato
+				generalDescriptor.positive_similarity_candidates.append([convertSimilatiry(distance) for distance in distances_candidate])
 		
+			#print('distances_candidate ',distances_candidate)
+			#print('generalDescriptor.positive_similarity_candidates ',generalDescriptor.positive_similarity_candidates)
+
 		for candidate in features_candidates:
 			distances_candidate = []
 			for negative in generalDescriptor.negative_obj_model_features:
 				dist = detSimilarity(candidate, negative)
 				distances_candidate.append(dist)	# Lista das distancias em relacao as features negativas
+			
+			if len(distances_candidate):
+				generalDescriptor.negative_distances_candidates.append(distances_candidate)	# Lista das distancias para cada candidato
+				generalDescriptor.negative_similarity_candidates.append([convertSimilatiry(distance) for distance in distances_candidate])
 
-			generalDescriptor.negative_distances_candidates.append(distances_candidate)	# Lista das distancias para cada candidato
-			generalDescriptor.negative_similarity_candidates.append([convertSimilatiry(distance) for distance in distances_candidate])
+			#print('distances_candidate ',distances_candidate)
+			#print('generalDescriptor.negative_similarity_candidates ',generalDescriptor.negative_similarity_candidates)
 	
 	# Calculo das distancias e similaridades para a BB do candidato do Tracker
 	if not is_bb_tracker_empty:
@@ -431,21 +467,31 @@ def TLD_parte_2(generated, imgs_pil, frame):
 	lista_positive_simi_tracker_candidate = list( np.asarray( generalDescriptor.positive_similarity_tracker_candidate ).reshape(-1) )
 	lista_negative_simi_tracker_candidate = list( np.asarray( generalDescriptor.negative_similarity_tracker_candidate ).reshape(-1) )
 	
-	if(len(lista_positive_simi_tracker_candidate)):
-		print('Pos_Global ', pos_sim_positive_tracker_candidate, ' Pos_List ', lista_positive_simi_tracker_candidate.index(max(lista_positive_simi_tracker_candidate)))
+	'''
+	print('len        negative_simi_tracker_candidate ): ', len(lista_negative_simi_tracker_candidate))
+	print('getLength  negative_simi_tracker_candidate ): ', getLength(lista_negative_simi_tracker_candidate))
+	print(lista_negative_simi_candidates)
+	print('')
+	print('len        positive_simi_tracker_candidate ): ', len(lista_positive_simi_tracker_candidate))
+	print('getLength  positive_simi_tracker_candidate ): ', getLength(lista_positive_simi_tracker_candidate))
+	print(lista_positive_simi_candidates)
+	'''
+	
+	#print('Py generalDescriptor.positive_similarity_tracker_candidate ', generalDescriptor.positive_similarity_tracker_candidate)
+	#print('Py generalDescriptor.negative_similarity_tracker_candidate ', generalDescriptor.negative_similarity_tracker_candidate)
 
-	print('len(generalDescriptor.negative_similarity_candidates): ', len(generalDescriptor.negative_similarity_candidates))
-	#print('*lista_negative_simi_candidates: ', *lista_negative_simi_candidates)
-	print('len(generalDescriptor.positive_similarity_candidates)',len(generalDescriptor.positive_similarity_candidates))
-	#print('(*lista_positive_simi_candidates)', (*lista_positive_simi_candidates))
-	print('len: generalDescriptor.negative_obj_model_features: ',len(generalDescriptor.negative_obj_model_features))
-	print('shape: ',getLength(lista_negative_simi_candidates))
-	positive_simi_cand	= (c_float * getLength(lista_positive_simi_candidates))	(*lista_positive_simi_candidates)
-	negative_simi_cand	= (c_float * getLength(lista_negative_simi_candidates))	(*lista_negative_simi_candidates) # BUG: espaço reservado esta menor que o tamanho da lista que retorna
-	positive_simi_tracker = (c_float * len(generalDescriptor.positive_similarity_tracker_candidate)) (*lista_positive_simi_tracker_candidate)
-	negative_simi_tracker = (c_float * len(generalDescriptor.negative_similarity_tracker_candidate)) (*lista_negative_simi_tracker_candidate)
+	positive_simi_cand	= (c_float * len(lista_positive_simi_candidates))	(*lista_positive_simi_candidates)
+	negative_simi_cand	= (c_float * len(lista_negative_simi_candidates))	(*lista_negative_simi_candidates)
+	positive_simi_tracker = (c_float * len(lista_positive_simi_tracker_candidate)) (*lista_positive_simi_tracker_candidate)
+	negative_simi_tracker = (c_float * len(lista_negative_simi_tracker_candidate)) (*lista_negative_simi_tracker_candidate)
 
-	size_good_windows	  = c_int(0) 	# tamanho do vetor array good windows
+	size_pos_sim_cand 	   = c_int(len(lista_positive_simi_candidates))
+	size_neg_sim_cand 	   = c_int(len(lista_negative_simi_candidates))
+
+	size_pos_sim_tracker   = c_int(len(lista_positive_simi_tracker_candidate))
+	size_neg_sim_tracker   = c_int(len(lista_negative_simi_tracker_candidate))
+
+	size_good_windows	   = c_int(0) 	# tamanho do vetor array good windows
 	size_good_windows_hull = c_int(0) 	# tamanho do vetor array good_windows_hull (que e sempre 4)
 
 	array_good_windows	  = [-1] * ARRAY_SIZE
@@ -454,8 +500,10 @@ def TLD_parte_2(generated, imgs_pil, frame):
 	array_good_windows	  = (c_float * ARRAY_SIZE) (*array_good_windows)
 	array_good_windows_hull = (c_float * ARRAY_SIZE) (*array_good_windows_hull)
 
-	shared_library.TLD_function_2(positive_simi_cand, negative_simi_cand,
-								  positive_simi_tracker, negative_simi_tracker,
+	shared_library.TLD_function_2(positive_simi_cand, byref(size_pos_sim_cand),
+								  negative_simi_cand, byref(size_neg_sim_cand),
+								  positive_simi_tracker, byref(size_pos_sim_tracker),
+								  negative_simi_tracker, byref(size_neg_sim_tracker),
 								  array_good_windows, byref(size_good_windows),
 								  array_good_windows_hull, byref(array_good_windows_hull))
 
@@ -464,9 +512,14 @@ def TLD_parte_2(generated, imgs_pil, frame):
 
 	posicao = frame - 1
 
-	addModel(generated, bb_list_good_window,  generalDescriptor.good_windows_bb,		generalDescriptor.good_windows_features, imgs_pil[posicao])
+	addModel(generated, bb_list_good_window,  generalDescriptor.good_windows_bb,	   generalDescriptor.good_windows_features, imgs_pil[posicao])
 	addModel(generated, bb_good_windows_hull, generalDescriptor.good_windows_hull_bb,  generalDescriptor.good_windows_hull_features, imgs_pil[posicao])
 	
+	generalDescriptor.positive_similarity_candidates = []
+	generalDescriptor.negative_similarity_candidates = []
+	generalDescriptor.positive_similarity_tracker_candidate = []
+	generalDescriptor.negative_similarity_tracker_candidate = []
+
 	#return bb_list_good_window, is_good_window_empty, bb_good_windows_hull, is_good_hull_empty
 
 def getOpts(opts):
