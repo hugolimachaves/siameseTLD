@@ -14,8 +14,10 @@ from parameters import configParams
 from ctypes import *
 from sklearn.neighbors import KNeighborsClassifier
 
-DEBUG_PRINT_ARRAY = True
-MOSTRAR_OBJ_MODEL = True
+DEBUG_PRIMEIRA_ANALISE_SIMILARIDADE = True
+DEBUG_CODIGO = False
+DEBUG_PRINT_ARRAY = False
+MOSTRAR_OBJ_MODEL = False
 DIM_DESCRIPTOR = 256
 ONE_DIMENSION = 1
 ATOMIC_SIZE = 87
@@ -353,7 +355,9 @@ def TLD_parte_1(generated, imgs_pil, frame):
 									array_object_model_negative, byref(size_negative),
 									array_bb_tracker, byref(size_bb_tracker))
 	
-	print('\nPy - part1 Frame de entrada: '+ str(frame)+ ' Frame de retorno: ' + str(retorno_frame.value))
+	if(DEBUG_CODIGO):
+		print('\nPy - part1 Frame de entrada: '+ str(frame)+ ' Frame de retorno: ' + str(retorno_frame.value))
+	
 	assert (frame == retorno_frame.value), "Py - Conflito nos frames"
 
 	candidates = []
@@ -391,7 +395,8 @@ def TLD_parte_1(generated, imgs_pil, frame):
 	is_pos_empty = addModel(generated, bb_list_positivo, generalDescriptor.positive_obj_model_bb, generalDescriptor.positive_obj_model_features, imgs_pil[posicao])
 	is_bb_tracker_empty = addModel(generated, bb_single_element_tracker, generalDescriptor.tracker_bb, generalDescriptor.tracker_features, imgs_pil[posicao])
 	
-	print('\nbb list negativo',bb_list_negativo)
+	if(DEBUG_CODIGO):
+		print('\nbb list negativo',bb_list_negativo)
 
 	list_feature = []
 	list_bb 	 = []
@@ -399,9 +404,12 @@ def TLD_parte_1(generated, imgs_pil, frame):
 	generalDescriptor.setCandidates(list_bb, list_feature, frame)
 
 	# Calculo das distancias e similaridades para os candidatos
-	print('Py -tamanho de positive_obj_model_features: ', len(generalDescriptor.positive_obj_model_features))
-	print('Py -tamanho de negative_obj_model_features: ', len(generalDescriptor.negative_obj_model_features))
+	if(DEBUG_CODIGO):
+		print('Py -tamanho de positive_obj_model_features: ', len(generalDescriptor.positive_obj_model_features))
+		print('Py -tamanho de negative_obj_model_features: ', len(generalDescriptor.negative_obj_model_features))
+	
 	_ , features_candidates = generalDescriptor.getCandidates(frame)
+
 	if not is_candidates_empty:
 		for candidate in features_candidates:
 			distances_candidate = []

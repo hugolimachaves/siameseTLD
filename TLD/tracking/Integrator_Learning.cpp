@@ -34,7 +34,8 @@
 #define N_D 1500 		//Número máximo de features de oclusão
 #define WIND_LENGHT 10 	//Quantidade de frames que as features de contexto são mantidas
 
-#define PRINT_DEBUG 1
+#define PRINT_DEBUG 0
+#define DEBUG_CODIGO 0
 
 static 	int valid = 0, 	//0 = NCC, 1 = media, 2 = alien
 			conf = 0; 	//0 = NCC, 1 = media
@@ -482,7 +483,8 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 	double t_conf, max_d_conf;
 	Descriptor t_descr, d_descr;
 
-	if(tracked && t_size.width > 0 && t_size.height > 0){
+	if(tracked && t_size.width > 0 && t_size.height > 0)
+	{
 		output[0] = t_bb[0];
 		output[1] = t_bb[1];
 		output[2] = t_bb[2];
@@ -519,7 +521,7 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 			}
 			else
 			{
-				std::cout<<"NAO detectado!"<<std::endl;	
+				std::cout<<"NAO detectado!"<<std::endl;
 			}
 		}
 
@@ -573,7 +575,8 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 		}
 	}
 
-	std::cout << "tracker_valid: " << tracker_valid << std::endl;
+	if(DEBUG_CODIGO)
+		std::cout << "tracker_valid: " << tracker_valid << std::endl;
 
 	if(tracker_valid && enable_detect){
 		tracker_valid = Retrain(frame, t_bb,

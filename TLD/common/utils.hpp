@@ -27,7 +27,7 @@
 
 #define _DEBUG_IL 0
 #define _DEBUG_TRACKER 0
-#define _DEBUG_DETECTOR 1
+#define _DEBUG_DETECTOR 0
 
 #define OVERLAP_THRESHOLD 0.5
 #define MIN_BB 20      //Tamanho mínimo de bb

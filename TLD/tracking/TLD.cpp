@@ -1,4 +1,5 @@
 #define ESCRITA 1
+#define DEBUG_PRIMEIRA_ANALISE_SIMILARIDADE 1 
 
 #include "TLD.hpp"
 #include <fstream>
@@ -561,6 +562,7 @@ void init_TLD(char *parameters_path, int* frame,
 			return;
 		}
 		if(enable_detect)
+			//TODO analisar esse passo com mais detalhes
 			Train(curr_frame, bb, show,
 				  array_object_model_positive, size_positive,
 				  array_object_model_negative, size_negative,
@@ -639,6 +641,7 @@ void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
 				{
 					start_t = clock();
 					//char* saidaTemplates = "aas";
+					//analisar essa parte com mais detalhes
 					detected = Detect_part_1(next_frame, frame_count/*, strSaidaTemplates, saidaTemplates*/,
 											 array_bb_candidates, size_candidates,
 											 array_object_model_positive, size_positive,
@@ -730,7 +733,8 @@ void TLD_part_2(float *similaridade_positiva_candidates, int* size_sim_pos_cand,
 	bb[3] = new_bb[3];
 	fprintfBB(bb_file);
 
-    cout << "NEW BB TRACKER = [" << new_bb[0] << ", " << new_bb[1] << ", " << new_bb[2] << ", " << new_bb[3] << "]" << endl;
+	if(DEBUG_PRIMEIRA_ANALISE_SIMILARIDADE)
+    	cout << "\nNEW BB TRACKER = [" << new_bb[0] << ", " << new_bb[1] << ", " << new_bb[2] << ", " << new_bb[3] << "]" << endl;
 
 	next_frame.copyTo(curr_frame);
 }
