@@ -13,12 +13,13 @@ from siamese_net import SiameseNet
 from parameters import configParams
 from ctypes import *
 from sklearn.neighbors import KNeighborsClassifier
+import random as rn
 
 DEBUG_PRINT_ARRAY = True
 MOSTRAR_OBJ_MODEL = True
 DIM_DESCRIPTOR = 256
 ONE_DIMENSION = 1
-ATOMIC_SIZE = 87
+ATOMIC_SIZE = 88
 SIZE_ARRAY = 32
 LAST_ADDED = -1
 SIZE_DESCRIPTOR = 256
@@ -33,6 +34,12 @@ PRIMEIRO_FRAME = 1
 SEGUNDO_FRAME = 2
 ULTIMO_FRAME = 354
 K = 0.005
+
+tf.set_random_seed(1)
+#os.environ['PYTHONHASHSEED'] = '0'
+#rn.seed(12345)
+#np.random.seed(42)
+
 
 
 NOME_VIDEO = 'racing'
@@ -76,7 +83,7 @@ class Generation:
 		tf.initialize_all_variables().run(session=self.tensorFlowSession)
 		
 
-	#passando Bounding Box no formato X,Y,W,H, retornando left, top, right, botton
+	#passando Bounding Box no formato Y,X,W,H, retornando left, top, right, botton
 	def get_image_cropped(self, img, bb): # imagemCurrentFrame PIL
 		left	= round(bb[0] - (bb[2]/2))
 		top	    = round(bb[1] - (bb[3])/2)
@@ -88,10 +95,17 @@ class Generation:
 
 	def getDescriptor(self,bb,imageSource): # zMinimumFeatures = sess.run(zMinimumPreTrained, feed_dict={minimumSiameseNetPlaceHolder: zCropMinimum})
 		imImageSource = self.get_image_cropped(imageSource,bb)
+		#input('imagem cropped, aperta alguma coisa')
+		#imImageSource.show(title='cropped')
+		#input('imagem raw, aperta alguma coisa')
+		#imageSource.show(title='raw')
 		neoImageSource = imImageSource.resize((ATOMIC_SIZE,ATOMIC_SIZE))
+
 		npImageSource = np.array(neoImageSource)
 		npImageSource = npImageSource.reshape(1,npImageSource.shape[0],npImageSource.shape[1],3)
-		zMinimumFeatures = self.tensorFlowSession.run(self.zMinimumPreTrained, feed_dict={self.minimumSiameseNetPlaceHolder: npImageSource})
+
+		with self.tensorFlowSession as test:
+			zMinimumFeatures = test.run(self.zMinimumPreTrained, feed_dict={self.minimumSiameseNetPlaceHolder: npImageSource})
 		
 		return zMinimumFeatures
 
@@ -539,7 +553,7 @@ def getOpts(opts):
 	opts['trainWeightDecay'] = 5e-04
 	opts['stddev'] = 0.03
 	opts['subMean'] = False
-	opts['minimumSize'] = 87
+	opts['minimumSize'] = ATOMIC_SIZE
 	opts['video'] = NOME_VIDEO
 	opts['modelPath'] = './models/'
 	opts['modelName'] = opts['modelPath']+"model_tf.ckpt"
@@ -811,6 +825,42 @@ def main(_):
 	resPath = os.path.join(opts['seq_base_path'], opts['video'], 'res')
 	bBoxes = np.zeros([nImgs, 4])
 	tic = time.time()
+	#nao faca isso em casa
+	
+	
+	#[320,180,280,260], trump1
+	#[320,200,230,260], trump2
+
+
+	trump1 = Image.open('trump1.jpg')
+	trump2 = Image.open('car.jpg')
+	trump1Descr = generated.getDescriptor([320,180,280,260], trump1) #[240,320,480,640]
+	#trump2Descr = generated.getDescriptor([320,180,280,260], trump2) # [320,240,640,480]
+	print('Descritor trump1: ',trump1Descr)
+	#print('Descritor trump2: ',trump2Descr)
+	#print('trump1 - trump2: ', detSimilarity(trump1Descr,trump2Descr))
+	print((trump1Descr[0][0][0][0]))
+	#print((trump2Descr[0][0][0][0]))
+	#print('convertSimilatiry: ', convertSimilatiry(detSimilarity(trump1Descr, trump2Descr)))
+	'''
+	trump1 = Image.open('trump1.jpg')
+	trump2 = Image.open('car.jpg')
+	trump1Descr = generated.getDescriptor([320,180,280,260], trump1) #[240,320,480,640]
+	trump2Descr = generated.getDescriptor([320,180,280,260], trump2) # [320,240,640,480]
+	print('Descritor trump1: ',trump1Descr)
+	print('Descritor trump2: ',trump2Descr)
+	print('trump1 - trump2: ', detSimilarity(trump1Descr,trump2Descr))
+	print((trump1Descr[0][0][0][0]))
+	print((trump2Descr[0][0][0][0]))
+	print('convertSimilatiry: ', convertSimilatiry(detSimilarity(trump1Descr, trump2Descr)))
+	teste = input('cancele isso por favor ')
+	'''
+
+
+
+	#~nao faca isso em casa
+	'''
+
 	for frame in range(POSICAO_PRIMEIRO_FRAME, nImgs):
 		print('')
 		print(('Estamos no frame ' + str(frame+1)).center(80,'*'))
@@ -845,7 +895,9 @@ def main(_):
 		cv2.imshow("tracking - siamese", imDraw)
 		cv2.waitKey(1)
 
+
 	print(time.time()-tic)
+	'''
 	return
 
 def addModel(generated, bb_list, bb_acumulated_atribute, feature_acumulated_atribute, image):
