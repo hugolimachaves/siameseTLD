@@ -33,7 +33,7 @@ POSICAO_SEGUNDO_FRAME = 1
 PRIMEIRO_FRAME = 1
 SEGUNDO_FRAME = 2
 ULTIMO_FRAME = 354
-K = 0.005
+K = 0.04
 
 tf.set_random_seed(1)
 #os.environ['PYTHONHASHSEED'] = '0'
@@ -95,17 +95,18 @@ class Generation:
 
 	def getDescriptor(self,bb,imageSource): # zMinimumFeatures = sess.run(zMinimumPreTrained, feed_dict={minimumSiameseNetPlaceHolder: zCropMinimum})
 		imImageSource = self.get_image_cropped(imageSource,bb)
-		#input('imagem cropped, aperta alguma coisa')
-		#imImageSource.show(title='cropped')
-		#input('imagem raw, aperta alguma coisa')
-		#imageSource.show(title='raw')
+		
+		#imImageSource.show()
+	
+		#imageSource.show()
+		#input('iaperta alguma coisa')
+
 		neoImageSource = imImageSource.resize((ATOMIC_SIZE,ATOMIC_SIZE))
 
 		npImageSource = np.array(neoImageSource)
 		npImageSource = npImageSource.reshape(1,npImageSource.shape[0],npImageSource.shape[1],3)
 
-		with self.tensorFlowSession as test:
-			zMinimumFeatures = test.run(self.zMinimumPreTrained, feed_dict={self.minimumSiameseNetPlaceHolder: npImageSource})
+		zMinimumFeatures = self.tensorFlowSession.run(self.zMinimumPreTrained, feed_dict={self.minimumSiameseNetPlaceHolder: npImageSource})
 		
 		return zMinimumFeatures
 
@@ -827,22 +828,25 @@ def main(_):
 	tic = time.time()
 	#nao faca isso em casa
 	
+
+
+	'''
 	
 	#[320,180,280,260], trump1
 	#[320,200,230,260], trump2
 
 
-	trump1 = Image.open('trump1.jpg')
-	trump2 = Image.open('car.jpg')
+	trump1 = Image.open('trump2.jpg')
+	trump2 = Image.open('trump1.jpg')
 	trump1Descr = generated.getDescriptor([320,180,280,260], trump1) #[240,320,480,640]
-	#trump2Descr = generated.getDescriptor([320,180,280,260], trump2) # [320,240,640,480]
+	trump2Descr = generated.getDescriptor([320,180,280,260], trump2) # [320,240,640,480]
 	print('Descritor trump1: ',trump1Descr)
-	#print('Descritor trump2: ',trump2Descr)
-	#print('trump1 - trump2: ', detSimilarity(trump1Descr,trump2Descr))
-	print((trump1Descr[0][0][0][0]))
+	print('Descritor trump2: ',trump2Descr)
+	print('trump1 - trump2: ', detSimilarity(trump1Descr,trump2Descr))
+	#print((trump1Descr[0][0][0][0]))
 	#print((trump2Descr[0][0][0][0]))
-	#print('convertSimilatiry: ', convertSimilatiry(detSimilarity(trump1Descr, trump2Descr)))
-	'''
+	print('convertSimilatiry: ', convertSimilatiry(detSimilarity(trump1Descr, trump2Descr)))
+	
 	trump1 = Image.open('trump1.jpg')
 	trump2 = Image.open('car.jpg')
 	trump1Descr = generated.getDescriptor([320,180,280,260], trump1) #[240,320,480,640]
@@ -854,7 +858,7 @@ def main(_):
 	print((trump2Descr[0][0][0][0]))
 	print('convertSimilatiry: ', convertSimilatiry(detSimilarity(trump1Descr, trump2Descr)))
 	teste = input('cancele isso por favor ')
-	'''
+
 
 
 
@@ -897,7 +901,8 @@ def main(_):
 
 
 	print(time.time()-tic)
-	'''
+
+	
 	return
 
 def addModel(generated, bb_list, bb_acumulated_atribute, feature_acumulated_atribute, image):
@@ -916,3 +921,4 @@ def addModel(generated, bb_list, bb_acumulated_atribute, feature_acumulated_atri
 
 if __name__=='__main__':
 	tf.app.run()
+	

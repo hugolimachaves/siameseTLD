@@ -25,13 +25,17 @@ extern "C"{
                    bb_tracker, size_bb_tracker);
 
     }
-    void TLD_function_2(float *similaridade_positiva_candidates, float *similaridade_negativa_candidates,
-                        float *similaridade_positiva_bb_tracker, float *similaridade_negativa_bb_tracker,
-                        float *array_good_windows, int *size_good_windows,
-                        float *array_good_windows_hull, int *size_good_windows_hull){
+    void TLD_function_2(float *similaridade_positiva_candidates, int* size_sim_pos_cand,
+                        float *similaridade_negativa_candidates, int* size_sim_neg_cand,
+                        float *similaridade_positiva_bb_tracker, int* size_sim_pos_tracker,
+                        float *similaridade_negativa_bb_tracker, int* size_sim_neg_tracker,
+                        float *array_good_windows,               int *size_good_windows,
+                        float *array_good_windows_hull,          int *size_good_windows_hull){
 
-        TLD_part_2(similaridade_positiva_candidates, similaridade_negativa_candidates,
-                   similaridade_positiva_bb_tracker, similaridade_negativa_bb_tracker,
+        TLD_part_2(similaridade_positiva_candidates, size_sim_pos_cand,
+                    similaridade_negativa_candidates, size_sim_neg_cand,
+                    similaridade_positiva_bb_tracker, size_sim_pos_tracker,
+                    similaridade_negativa_bb_tracker, size_sim_neg_tracker,
                    array_good_windows, size_good_windows,
                    array_good_windows_hull, size_good_windows_hull);
 
