@@ -37,7 +37,8 @@
 #define NN_TEST(r_conf) (r_conf > NN_THETA)
 #define NN_TEST_MARGIN_P(r_conf) (r_conf - NN_THETA <= NN_LAMBDA) //Fracos positivos e negativos
 #define NN_TEST_MARGIN_N(r_conf) (NN_THETA - r_conf < NN_LAMBDA) //Fracos negativos e positivos
-#define DEBUG_CODIGO 1
+#define DEBUG_CODIGO 0
+#define DEBUG_CODIGO2 0
 
 
 // Kevyn
@@ -147,11 +148,13 @@ double modelSimilatiryRetrain(vector<ModelSample> model, Mat pattern, int &isin,
 
 	max_sim = similaridade[0];
 	max_pos = 0;
-	std::cout<<"C++ similaridade[i] "<<similaridade[0]<<std::endl;
+	if(DEBUG_CODIGO2)
+		std::cout<<"C++ in Detector / modelSimilatiryRetrain - similaridade[i]  "<<similaridade[0]<<std::endl;
 
 	for(i=1; i<*size_sim; i++)
 	{
-        std::cout<<"C++ similaridade[i] "<<similaridade[i]<<std::endl;
+		if(DEBUG_CODIGO2)
+        	std::cout<<"C++ in Detector / modelSimilatiryRetrain - similaridade[i] "<<similaridade[i]<<std::endl;
         sim = similaridade[i];
 		if(sim > max_sim)
 		{
@@ -351,7 +354,8 @@ double earliestSimilatiry(vector<ModelSample> model, Mat pattern, float *similar
 
 //Similaridade conservativa. Amostra, modelo negativo e metade do positivo. No intervalo [1/3, 2/3]
 double conservativeSimilarity(Mat pattern, float *similaridade_positiva_bb_tracker, int *size_pos_tracker,
-                              float *similaridade_negativa_bb_tracker, int *size_neg_tracker){
+                              float *similaridade_negativa_bb_tracker, int *size_neg_tracker)
+{
 
     if (DEBUG_CODIGO)
         std::cout<<"C++ conservativeSimilarity - in Detector"<<std::endl;
@@ -360,15 +364,19 @@ double conservativeSimilarity(Mat pattern, float *similaridade_positiva_bb_track
 	double earl_sim, neg_sim, sim;
 	int isin; //ignorado
 
-	if(object_model[1].empty()) return 0.;
-	if(object_model[0].empty()) return 1.;
+	if(object_model[1].empty()) 
+		return 0.;
+	if(object_model[0].empty()) 
+		return 1.;
 
 	neg_sim = modelSimilatiryRetrain(object_model[0], pattern, isin, similaridade_negativa_bb_tracker, size_neg_tracker); //[0.,1.]
 	earl_sim = earliestSimilatiry(object_model[1], pattern, similaridade_positiva_bb_tracker, size_pos_tracker); //[0.,1.]
 //	if(earl_sim + neg_sim != 0) sim = earl_sim / (earl_sim + neg_sim);
 //	else sim = 0.;
-	if(earl_sim + neg_sim != 2) sim = (1. - neg_sim) / (2 - earl_sim - neg_sim);
-	else if(earl_sim == neg_sim) sim = 0.5;
+	if(earl_sim + neg_sim != 2) 
+		sim = (1. - neg_sim) / (2 - earl_sim - neg_sim);
+	else if(earl_sim == neg_sim) 
+		sim = 0.5;
 	else sim = 0.;
 	return sim;
 }
@@ -582,24 +590,36 @@ void setOverlapingWindows(BoundingBox position, float *array_good_windows, int *
 
     //TODO Selecao aleatoria
 
-    if(std::isnan(good_windows_hull[2])||std::isnan(good_windows_hull[0])){
+
+    if(std::isnan(good_windows_hull[2])||std::isnan(good_windows_hull[0]))
+    {
     	array_good_windows_hull[0] = good_windows_hull[0] / 2;
     	array_good_windows_hull[2] = 0.;
     }
-	else{
-		array_good_windows_hull[0] = good_windows_hull[0] + (good_windows_hull[2] - good_windows_hull[0] + 1) / 2;
+	else
+	{
+		array_good_windows_hull[0] = good_windows_hull[0] + (good_windows_hull[2] - good_windows_hull[0] + 1) / 2; // PADRAO YXWH
+		array_good_windows_hull[2] = good_windows_hull[2] - good_windows_hull[0];
+		array_good_windows_hull[3] = good_windows_hull[3] - good_windows_hull[1];
 	}
 
-	if(std::isnan(good_windows_hull[3])||std::isnan(good_windows_hull[1])){
+	if(std::isnan(good_windows_hull[3])||std::isnan(good_windows_hull[1]))
+	{
     	array_good_windows_hull[1] = good_windows_hull[1] / 2;
     	array_good_windows_hull[3] = 0.;
 	}
-	else{
-    	array_good_windows_hull[1] = good_windows_hull[1] + (good_windows_hull[3] - good_windows_hull[1] + 1) / 2;
+	
+	else
+	{
+    	array_good_windows_hull[1] = good_windows_hull[1] + (good_windows_hull[3] - good_windows_hull[1] + 1) / 2; // PADRAO YXWH
+    	array_good_windows_hull[2] = good_windows_hull[2] - good_windows_hull[0];
+		array_good_windows_hull[3] = good_windows_hull[3] - good_windows_hull[1];
 	}
 
     obj = 0;
-	for(int i=0; i<*size_good_windows; i+=4){
+	
+	for(int i=0; i<*size_good_windows; i+=4)
+	{
 		array_good_windows[i]   = good_windows[obj][0] + widthBB (good_windows[obj]) / 2;
 		array_good_windows[i+1] = good_windows[obj][1] + heightBB(good_windows[obj]) / 2;
 		array_good_windows[i+2] = widthBB (good_windows[obj]);

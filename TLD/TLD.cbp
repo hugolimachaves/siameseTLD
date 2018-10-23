@@ -45,6 +45,7 @@
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="-std=c++11" />
 			<Add option="-Wall" />
 		</Compiler>
 		<Unit filename="common/sift_utils.cpp" />

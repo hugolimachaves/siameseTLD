@@ -34,7 +34,8 @@
 #define N_D 1500 		//Número máximo de features de oclusão
 #define WIND_LENGHT 10 	//Quantidade de frames que as features de contexto são mantidas
 
-#define PRINT_DEBUG 1
+#define PRINT_DEBUG 0
+#define PRINT_DEBUG_INTEGRATOR 1
 
 static 	int valid = 0, 	//0 = NCC, 1 = media, 2 = alien
 			conf = 0; 	//0 = NCC, 1 = media
@@ -48,19 +49,23 @@ static SiftFeature *c_t, *d_t; 		//Conjunto de features de contexto e de oclusã
 static int t, d_size;  				// t = contador de frame, d_size = tamanho de d_t
 
 //Computa histograma de cores - Descritor de cor. Recebe descritor zerado nas posições do HC.
-void colorHistogram(Mat patch, Descriptor &descr){
+void colorHistogram(Mat patch, Descriptor &descr)
+{
 	uchar *row;
 	double *color_hist = &descr[HC_BEGIN], norm;
 
-	for(int y = 0; y < patch.rows; y++){
+	for(int y = 0; y < patch.rows; y++)
+	{
 		row = patch.ptr<uchar>(y);
-		for(int x = 0; x < patch.cols; x++, row++){
+		for(int x = 0; x < patch.cols; x++, row++)
+		{
 			if(*row < HC_SIZE) color_hist[(int)(*row)]++;
 		}
 	}
 
 	norm = L2norm(color_hist, HC_SIZE);
-	if(norm > EPSILON) for(int i = 0; i < HC_SIZE; i++) {
+	if(norm > EPSILON) for(int i = 0; i < HC_SIZE; i++)
+	{
 		color_hist[i]/=norm;
 	}
 }
@@ -200,37 +205,50 @@ void computeDescriptor(Mat frame, BoundingBox position, Descriptor &descriptor){
 	patch.release();
 }
 
-double similarity(Descriptor d1, Descriptor d2){
-    if(HC + LBP + HOG == 0) return 0.;
+double similarity(Descriptor d1, Descriptor d2)
+{
+    if(HC + LBP + HOG == 0)
+    	return 0.;
 
 	int index_match;
 	double hc_vote = 0., lbp_vote = 0., hog_vote = 0., max_vote = 0.;
 
-	if(HC){
-		for(int i = HC_BEGIN; i < HC_BEGIN+HC_SIZE; i++) hc_vote+= d1[i]*d2[i]; //NCC. Descritores já foram normalizados
-		if(hc_vote > max_vote) max_vote = hc_vote;
+	if(HC)
+	{
+		for(int i = HC_BEGIN; i < HC_BEGIN+HC_SIZE; i++)
+			hc_vote+= d1[i]*d2[i]; //NCC. Descritores já foram normalizados
+		if(hc_vote > max_vote)
+			max_vote = hc_vote;
 	}
-    if(LBP){
-        for(int i = LBP_BEGIN; i < LBP_BEGIN+LBP_SIZE; i++) lbp_vote+= d1[i]*d2[i];
+    if(LBP)
+    {
+        for(int i = LBP_BEGIN; i < LBP_BEGIN+LBP_SIZE; i++)
+        	lbp_vote+= d1[i]*d2[i];
         lbp_vote/=NUM_CELL;
-        if(lbp_vote > max_vote) max_vote = lbp_vote;
+        if(lbp_vote > max_vote)
+        	max_vote = lbp_vote;
     }
-	if(HOG){
-		for(int i = HOG_BEGIN; i < HOG_BEGIN+HOG_SIZE; i++) hog_vote+= d1[i]*d2[i];
-		if(hog_vote > max_vote) max_vote = hog_vote;
+	if(HOG)
+	{
+		for(int i = HOG_BEGIN; i < HOG_BEGIN+HOG_SIZE; i++)
+			hog_vote+= d1[i]*d2[i];
+		if(hog_vote > max_vote)
+			max_vote = hog_vote;
 	}
 
 	return (hc_vote + lbp_vote + hog_vote)/(HC + LBP + HOG);
 	//return max_vote;
 }
 
-double conservativeSimilarity(Descriptor descr){
+double conservativeSimilarity(Descriptor descr)
+{
     int mid = (int)ceil(model.size()/2.);
     vector<Descriptor>::iterator    sample,
                                     middle = model.begin() + mid;
     double sim, max_sim = -1.;
 
-    for(sample = model.begin(); sample != middle; sample++){
+    for(sample = model.begin(); sample != middle; sample++)
+    {
         sim = similarity(*sample, descr);
         if(sim > max_sim) max_sim = sim;
     }
@@ -238,11 +256,13 @@ double conservativeSimilarity(Descriptor descr){
     return max_sim;
 }
 
-double modelSimilarity(Descriptor descr){
+double modelSimilarity(Descriptor descr)
+{
     vector<Descriptor>::iterator    sample;
     double sim, max_sim = -1.;
 
-    for(sample = model.begin(); sample != model.end(); sample++){
+    for(sample = model.begin(); sample != model.end(); sample++)
+    {
         sim = similarity(*sample, descr);
         if(sim > max_sim) max_sim = sim;
     }
@@ -251,7 +271,8 @@ double modelSimilarity(Descriptor descr){
 }
 
 //Validação da resposta do tracker utilizando sift
-bool trackerValid(Mat frame, BoundingBox position, int &o_size){
+bool trackerValid(Mat frame, BoundingBox position, int &o_size)
+{
 	BoundingBox new_position, margin;
 	///NOTE: Idêntico ao initJudge.
 	//Correção das margens quando a bb está próxima das bordas do frame
@@ -282,22 +303,27 @@ bool trackerValid(Mat frame, BoundingBox position, int &o_size){
 	o_size = occlusionDetection(s_t, &o_t, &a_t, margin, c_t, d_t, t);
 	s_t = NULL;
 
-	if(o_size < N_OCCL){
-		if(d_t != NULL){
+	if(o_size < N_OCCL)
+	{
+		if(d_t != NULL)
+		{
 			for(aux = d_t; aux->next != NULL; aux = aux->next);
 			aux->next = o_t;
 		}
 		else d_t = o_t;
 		d_size+= o_size;
-		if(d_size > N_D){
+		if(d_size > N_D)
+		{
 			d_t = randomForgetting(d_t, d_size, N_D);
 			d_size = N_D;
 		}
 
-		if(c_t != NULL){
+		if(c_t != NULL)
+		{
 			aux = c_t;
 			//Features estão ordenadas pelo tempo de inserção. Features antigas são eliminadas de c_t
-			while(aux->next != NULL && aux->flag <= (t - WIND_LENGHT)){
+			while(aux->next != NULL && aux->flag <= (t - WIND_LENGHT))
+			{
 				aux2 = aux;
 				aux = aux->next;
 				delete aux2;
@@ -353,17 +379,21 @@ SiftFeature* cInit(SiftFeature *s_0, BoundingBox corrected_bb){
 }
 
 //Computa features do objeto original
-void initJudge(Mat frame, BoundingBox position, int _valid, int _conf, bool _show){
-	if(0 <= _valid && _valid <= 2 && 0 <= _conf && _conf <= 1){
+void initJudge(Mat frame, BoundingBox position, int _valid, int _conf, bool _show)
+{
+	if(0 <= _valid && _valid <= 2 && 0 <= _conf && _conf <= 1)
+	{
 		valid = _valid;
 		conf = _conf;
 	}
-	else {
+	else
+	{
 		init_fail = true;
 		return;
 	}
 
-	if(widthBB(position) <= 0 || heightBB(position) <= 0){
+	if(widthBB(position) <= 0 || heightBB(position) <= 0)
+	{
 		init_fail = true;
 		return;
 	}
@@ -405,7 +435,8 @@ void initJudge(Mat frame, BoundingBox position, int _valid, int _conf, bool _sho
     window.release();
 }
 
-int mostConfident(vector<BoundingBox> c_answers, vector<double> c_conf, double &max_d_conf, int &max_d_index, BoundingBox t_bb, double t_conf = -1.){
+int mostConfident(vector<BoundingBox> c_answers, vector<double> c_conf, double &max_d_conf, int &max_d_index, BoundingBox t_bb, double t_conf = -1.)
+{
 	max_d_conf = -1.;
 	max_d_index = -1;
 	if(c_conf.empty()) return -1;
@@ -417,8 +448,10 @@ int mostConfident(vector<BoundingBox> c_answers, vector<double> c_conf, double &
 
 	max_d_conf = c_conf[0];
 	max_d_index = 0;
-	for(conf = c_conf.begin()+1; conf != c_conf.end(); conf++, index++){
-		if((*conf) > max_d_conf){
+	for(conf = c_conf.begin()+1; conf != c_conf.end(); conf++, index++)
+	{
+		if((*conf) > max_d_conf)
+		{
 			max_d_conf = (*conf);
 			index_return = max_d_index = index;
 		}
@@ -446,10 +479,12 @@ int mostConfident2(Mat frame, vector<BoundingBox> c_answers, double &max_d_conf,
     vector<BoundingBox>::iterator bb = c_answers.begin();
     vector<double>::iterator sim = c_sim.begin();
 
-	for(descr = c_descr.begin(); descr != c_descr.end(); descr++, bb++, sim++, index++){
+	for(descr = c_descr.begin(); descr != c_descr.end(); descr++, bb++, sim++, index++)
+	{
             computeDescriptor(frame, *bb, *descr);
             *sim = modelSimilarity(*descr);
-            if((*sim) > max_d_conf){
+            if((*sim) > max_d_conf)
+            {
                 max_d_conf = (*sim);
                 index_return = max_d_index = index;
             }
@@ -457,7 +492,8 @@ int mostConfident2(Mat frame, vector<BoundingBox> c_answers, double &max_d_conf,
 	if(!std::isnan(t_bb[0])) t_sim = modelSimilarity(t_descr);
 	else return index_return; //Sem resposta no tracker
 
-	if(max_d_conf > t_sim && overlap(t_bb, c_answers[max_d_index]) < 0.5) return index_return;
+	if(max_d_conf > t_sim && overlap(t_bb, c_answers[max_d_index]) < 0.5)
+		return index_return;
 
 	return -1;
 }
@@ -470,9 +506,12 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 			            float *array_good_windows_hull, int *size_good_windows_hull){
 	static bool tracker_valid = false;
 	t++;
-	output[0] = output[1] = output[2] = output[3] = NAN;
+	if(PRINT_DEBUG_INTEGRATOR)
+		std::cout<<"C++ in IntegratorLearning - Processando o frame: "<< t<<std::endl;
 
-	if(init_fail) return false;
+	output[0] = output[1] = output[2] = output[3] = NAN; // seta 0 como o valor de saida
+	if(init_fail)
+		return false;
 
 	Size t_size(widthBB(t_bb), heightBB(t_bb));
 	bool result = false;
@@ -482,30 +521,50 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 	double t_conf, max_d_conf;
 	Descriptor t_descr, d_descr;
 
-	if(tracked && t_size.width > 0 && t_size.height > 0){
-		output[0] = t_bb[0];
-		output[1] = t_bb[1];
-		output[2] = t_bb[2];
-		output[3] = t_bb[3];
+	if(tracked && t_size.width > 0 && t_size.height > 0)
+	{
+
+
+		//SUSPEITA DE QUEM NEM AQUI ESTAMOS ENTRANDO...
+
+
+
+
+		if(PRINT_DEBUG_INTEGRATOR)
+			std::cout<<"C++ in IntegratorLearning - se o tacker teve retorno valido"<<std::endl;
+
+		output[0] = t_bb[0]; // se o detector nao falhou
+		output[1] = t_bb[1]; // se o detector nao falhou
+		output[2] = t_bb[2]; // se o detector nao falhou
+		output[3] = t_bb[3]; // se o detector nao falhou
 		result = true;
 
-		switch(valid){
-			case 0: //NCC
+		switch(valid)
+		{
+
+			case 0: //NCC - (esse e padrao do TLD)
 				SMOOTH(frame, blur_img);
 				normalize(frame, blur_img, t_bb, 0, 0, t_candidate.image, t_candidate.ens_img, t_candidate.nn_img);
 
 				t_conf = conservativeSimilarity(t_candidate.nn_img, similaridade_positiva_bb_tracker, size_pos_tracker,
                                                 similaridade_negativa_bb_tracker, size_neg_tracker);
+				if(PRINT_DEBUG_INTEGRATOR)
+				{
+					std::cout<<"C++ in IntegratorLearning - se o tacker teve retorno valido"<<std::endl;
+					std::cout<<"C++ in IntegratorLearning - conservativeSimilarity do tracker: "<<t_conf<<std::endl;
+				}
 
-				if(t_conf > NN_VALID) tracker_valid = true;
+				if(t_conf > NN_VALID) // limiar para entrar no core
+					tracker_valid = true;
 			break;
-			case 1: //Media
+			case 1: //MEDIA
 				computeDescriptor(frame, t_bb, t_descr);
-				t_conf = conservativeSimilarity(t_descr);
+				t_conf = conservativeSimilarity(t_descr); // conservative similarity do presente arquivo
 
-				if(t_conf > NN_VALID) tracker_valid = true;
+				if(t_conf > NN_VALID)
+					tracker_valid = true;
 			break;
-			case 2: //Alien
+			case 2: //ALIEN
 				tracker_valid = trackerValid(frame, t_bb, num_occl);
 			break;
 		}
@@ -519,19 +578,29 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 			}
 			else
 			{
-				std::cout<<"NAO detectado!"<<std::endl;	
+				std::cout<<"NAO detectado!"<<std::endl;
 			}
 		}
 
-		if(detected)
+
+
+
+		if(detected) // se tambem houver deteccao
 		{
-			switch(conf){
-				case 0: //NCC
-					if(valid != 0){
+			switch(conf)
+			{
+				case 0: //NCC - (esse e padrao do TLD)
+					if(valid != 0)
+					{
 						SMOOTH(frame, blur_img);
 						normalize(frame, blur_img, t_bb, 0, 0, t_candidate.image, t_candidate.ens_img, t_candidate.nn_img);
-						t_conf = conservativeSimilarity(t_candidate.nn_img, similaridade_positiva_bb_tracker, size_pos_tracker,
-                                                        similaridade_negativa_bb_tracker, size_neg_tracker);
+						t_conf = conservativeSimilarity(t_candidate.nn_img, similaridade_positiva_bb_tracker, size_pos_tracker, similaridade_negativa_bb_tracker, size_neg_tracker);
+						if(PRINT_DEBUG_INTEGRATOR)
+						{
+							std::cout<<"C++ in IntegratorLearning  se o detector teve retorno valido"<<std::endl;
+							std::cout<<"C++ in IntegratorLearning  conservativeSimilarity do detector: "<<t_conf<<std::endl;
+
+						}
 					}
 					most_confident = mostConfident(detector_positions, d_conf, max_d_conf, max_d_index, t_bb, t_conf);
 				break;
@@ -551,10 +620,13 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 		}
 	}
 
-	else{
+	else
+	{
 		tracker_valid = false;
-		if(detected){
-			switch(conf){
+		if(detected)
+		{
+			switch(conf)
+			{
 				case 0: //NCC
 					most_confident = mostConfident(detector_positions, d_conf, max_d_conf, max_d_index, t_bb);
 				break;
@@ -563,7 +635,8 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 				break;
 			}
 
-			if(most_confident != -1){
+			if(most_confident != -1)
+			{
 				output[0] = detector_positions[most_confident][0];
 				output[1] = detector_positions[most_confident][1];
 				output[2] = detector_positions[most_confident][2];
@@ -575,7 +648,8 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 
 	std::cout << "tracker_valid: " << tracker_valid << std::endl;
 
-	if(tracker_valid && enable_detect){
+	if(tracker_valid && enable_detect)
+	{
 		tracker_valid = Retrain(frame, t_bb,
                                 similaridade_positiva_bb_tracker, size_pos_tracker,
                                 similaridade_negativa_bb_tracker, size_neg_tracker, show,

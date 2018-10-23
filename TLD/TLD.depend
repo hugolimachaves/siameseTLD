@@ -304,3 +304,106 @@
 1537216256 source:/home/hugo/Documents/Mestrado/codigoKevyn2/TLD/tracking/Tracker.cpp
 	"Tracker.hpp"
 
+1538401404 source:/home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/common/sift_utils.cpp
+	"sift_utils.hpp"
+	<math.h>
+
+1538401404 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/common/sift_utils.hpp
+	<opencv2/highgui/highgui.hpp>
+	"vl/generic.h"
+	"vl/sift.h"
+	"vl/stringop.h"
+	"vl/pgm.h"
+	"vl/getopt_long.h"
+	"utils.hpp"
+
+1538401404 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/common/vl/generic.h
+	"host.h"
+	"random.h"
+	<stdlib.h>
+	<stddef.h>
+	<time.h>
+	<assert.h>
+
+1538401404 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/common/vl/host.h
+
+1538401404 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/common/vl/random.h
+	"host.h"
+
+1538401404 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/common/vl/sift.h
+	<stdio.h>
+	"generic.h"
+
+1538401404 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/common/vl/stringop.h
+	"generic.h"
+
+1538401404 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/common/vl/pgm.h
+	"generic.h"
+	"mathop.h"
+	<stdio.h>
+
+1538401404 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/common/vl/mathop.h
+	"generic.h"
+	<math.h>
+	<float.h>
+
+1538401404 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/common/vl/getopt_long.h
+	"generic.h"
+
+1539814066 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/common/utils.hpp
+	<opencv2/highgui/highgui.hpp>
+	<opencv2/imgproc/imgproc.hpp>
+	"opencv2/legacy/legacy.hpp"
+	<iostream>
+
+1538401404 source:/home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/common/utils.cpp
+	"utils.hpp"
+	<math.h>
+	<fstream>
+
+1539899881 source:/home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/main.c
+	"main.h"
+
+1539899891 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/main.h
+	"tracking/TLD.hpp"
+	<stdlib.h>
+
+1539899768 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/tracking/TLD.hpp
+	<iostream>
+	<opencv2/highgui/highgui.hpp>
+	<opencv2/imgproc/imgproc.hpp>
+	"../common/utils.hpp"
+	"Tracker.hpp"
+	"Detector.hpp"
+	"Integrator_Learning.hpp"
+
+1538171426 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/tracking/Tracker.hpp
+	<opencv2/video/tracking.hpp>
+	"../common/utils.hpp"
+
+1539802960 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/tracking/Detector.hpp
+	<opencv2/highgui/highgui.hpp>
+	<opencv2/imgproc/imgproc.hpp>
+	<opencv2/legacy/legacy.hpp>
+	"../common/utils.hpp"
+
+1539801789 /home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/tracking/Integrator_Learning.hpp
+	<opencv2/highgui/highgui.hpp>
+	<opencv2/imgproc/imgproc.hpp>
+	"../common/utils.hpp"
+	"../common/sift_utils.hpp"
+	"Detector.hpp"
+
+1540315665 source:/home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/tracking/Detector.cpp
+	"Detector.hpp"
+
+1540316922 source:/home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/tracking/TLD.cpp
+	"TLD.hpp"
+	<fstream>
+
+1538171426 source:/home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/tracking/Tracker.cpp
+	"Tracker.hpp"
+
+1540325677 source:/home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/tracking/Integrator_Learning.cpp
+	"Integrator_Learning.hpp"
+

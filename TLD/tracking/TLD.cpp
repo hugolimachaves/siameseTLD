@@ -499,7 +499,8 @@ inline void show_save(Mat frame)
 
 //Lê .yml
 bool readParameters(char *parameters_path, int &window_size, int &valid, int &conf, string &bb_path, string &video_path,
-					string &init_path, bool &repeat_video, bool &print_status){
+					string &init_path, bool &repeat_video, bool &print_status)
+{
 	FileStorage parameters;
 
 	parameters.open(parameters_path, FileStorage::READ);
@@ -653,7 +654,8 @@ void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
 				}
 			}
 		}
-		else{
+		else
+		{
 			cerr << "Erro: TLD aplicado no frame 1" << endl;
 			return;
 		}
@@ -669,12 +671,13 @@ void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
 	}
 }
 
-void TLD_part_2(float *similaridade_positiva_candidates, int* size_sim_pos_cand,
-                float *similaridade_negativa_candidates, int* size_sim_neg_cand,
-                float *similaridade_positiva_bb_tracker, int* size_sim_pos_tracker,
-                float *similaridade_negativa_bb_tracker, int* size_sim_neg_tracker,
+void TLD_part_2(float *similaridade_positiva_candidates, int *size_sim_pos_cand,
+                float *similaridade_negativa_candidates, int *size_sim_neg_cand,
+                float *similaridade_positiva_bb_tracker, int *size_sim_pos_tracker,
+                float *similaridade_negativa_bb_tracker, int *size_sim_neg_tracker,
                 float *array_good_windows,               int *size_good_windows,
-                float *array_good_windows_hull,          int *size_good_windows_hull){
+                float *array_good_windows_hull,          int *size_good_windows_hull,
+				float *bb_tracker,                       int *size_bb_tracker){
 	clock_t start_t, end_t;
 	double elapsed;
     unnorm_object_model_clear();
@@ -724,13 +727,20 @@ void TLD_part_2(float *similaridade_positiva_candidates, int* size_sim_pos_cand,
 		imshow(OBJECT_WINDOW, object);
 
 	show_save(curr_frame);
-	bb[0] = new_bb[0];
-	bb[1] = new_bb[1];
-	bb[2] = new_bb[2];
-	bb[3] = new_bb[3];
+	bb[0] = new_bb[0]; //que vem do integratorLearning, pois e passado por referencia
+	bb[1] = new_bb[1]; //que vem do integratorLearning, pois e passado por referencia
+	bb[2] = new_bb[2]; //que vem do integratorLearning, pois e passado por referencia
+	bb[3] = new_bb[3]; //que vem do integratorLearning, pois e passado por referencia
 	fprintfBB(bb_file);
 
-    cout << "NEW BB TRACKER = [" << new_bb[0] << ", " << new_bb[1] << ", " << new_bb[2] << ", " << new_bb[3] << "]" << endl;
+    *size_bb_tracker = 4;
+
+	bb_tracker[0] = bb[0];
+    bb_tracker[1] = bb[1];
+    bb_tracker[2] = bb[2];
+    bb_tracker[3] = bb[3];
+
+    cout << "C++ NEW BB TRACKER = [" << new_bb[0] << ", " << new_bb[1] << ", " << new_bb[2] << ", " << new_bb[3] << "]" << endl;
 
 	next_frame.copyTo(curr_frame);
 }

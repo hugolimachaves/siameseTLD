@@ -18,5 +18,6 @@ extern "C"{
                         float *similaridade_positiva_bb_tracker, int* size_sim_pos_tracker,
                         float *similaridade_negativa_bb_tracker, int* size_sim_neg_tracker,
                         float *array_good_windows,               int *size_good_windows,
-                        float *array_good_windows_hull,          int *size_good_windows_hull);
+                        float *array_good_windows_hull,          int *size_good_windows_hull,
+                        float *bb_tracker,                       int *size_bb_tracker);
 }
