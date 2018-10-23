@@ -32,8 +32,12 @@ POSICAO_PRIMEIRO_FRAME = 0
 POSICAO_SEGUNDO_FRAME = 1
 PRIMEIRO_FRAME = 1
 SEGUNDO_FRAME = 2
-ULTIMO_FRAME = 354
-K = 0.04
+ULTIMO_FRAME = -1
+K = 0.005#0.04
+MAX_OBJECT_MODEL_ONE_DIM = 10
+OBJECT_MODEL_DISPLAY_SIZE_ONE_DIM = 50
+TOTAL_PIXEL_DISPLAY_OBJECT_MODEL_ONE_DIM = MAX_OBJECT_MODEL_ONE_DIM * OBJECT_MODEL_DISPLAY_SIZE_ONE_DIM
+
 
 tf.set_random_seed(1)
 #os.environ['PYTHONHASHSEED'] = '0'
@@ -42,10 +46,10 @@ tf.set_random_seed(1)
 
 
 
-NOME_VIDEO = 'racing'
+NOME_VIDEO = 'bag'
 YML_FILE_NAME = 'parameters.yml'
 CAMINHO_EXEMPLO_VOT2015 = '/home/hugo/Documents/Mestrado/vot2015/' + NOME_VIDEO
-CAMINHO_EXEMPLO_DATASET_TLD = '/home/hugo/Documents/Mestrado/codigoRastreador/dataset/exemplo/01-Light_video00001'
+#CAMINHO_EXEMPLO_DATASET_TLD = '/home/hugo/Documents/Mestrado/codigoRastreador/dataset/exemplo/01-Light_video00001'
 PARAMETERS_PATH = os.path.join(CAMINHO_EXEMPLO_VOT2015,YML_FILE_NAME)
 print('caminho do yml:',PARAMETERS_PATH)
 
@@ -91,7 +95,32 @@ class Generation:
 		bottom  = round(bb[3] + top)
 
 		cropped = img.crop([left,top,right,bottom])
+		
+
+	
+		aux1 = np.array(img)
+		aux2 = np.array(cropped)
+		print('aux1.shape: ',aux1.shape, ' aux1 type: ', type(aux1) )
+
+		print('aux2.shape: ',aux2.shape, ' aux2 type: ', type(aux2) )
+		#deu width e height -1 aqui!!!!!
+		#assert(1==2) # [e pra vc olhar o que eu escrevi em cima
+		print('bb: ',bb)
+		cv2.imshow('img',aux1)
+		cv2.imshow('cropped',aux2)
+
 		return cropped
+
+	'''
+	def get_image_cropped_ltrb(self, img, bb): # imagemCurrentFrame PIL
+		left	= round(bb[0] - (bb[2]/2))
+		top	    = round(bb[1] - (bb[3])/2)
+		right   = round(bb[2] + left)
+		bottom  = round(bb[3] + top)
+
+		cropped = img.crop([left,top,right,bottom])
+		return cropped
+	'''
 
 	def getDescriptor(self,bb,imageSource): # zMinimumFeatures = sess.run(zMinimumPreTrained, feed_dict={minimumSiameseNetPlaceHolder: zCropMinimum})
 		imImageSource = self.get_image_cropped(imageSource,bb)
@@ -158,6 +187,132 @@ class DeepDescription:
 		self.__currentFrame = currentFrame
 		return [], []
 	
+class Visualization:
+ 
+
+	def __init__(self, n_subWindows, size_subWindow,title, listFrames):
+
+		self._n_subwindows_per_dimension = n_subWindows
+		self._size_subwindow_per_dimension =  size_subWindow
+		self._n_pixels_display_one_dim = self._n_subwindows_per_dimension* self._size_subwindow_per_dimension
+		self._number_models = 0
+		self._imagemModels =  np.zeros((self._n_pixels_display_one_dim , self._n_pixels_display_one_dim, RGB ), dtype=np.uint8)
+		self._titulo = title
+		self._listFrames = listFrames
+
+	def convertYXWH2TLBR(self,yxwh):
+
+		ltrb =[]
+		ltrb.append(yxwh[0] - round(yxwh[3]/2) )
+		ltrb.append(yxwh[1] - round(yxwh[2]/2) )
+		ltrb.append(yxwh[0] + round(yxwh[3]/2) )
+		ltrb.append(yxwh[1] + round(yxwh[2]/2) )
+		return ltrb
+	'''
+	def addObjectModelVisualization(objecModel,img,): # formato para opencv: ltrb
+
+		objectModel = list(objectModel)
+		if len(objectModeL== 5):
+			objectModel = objectModel(:-1)
+		objectModel =  =convertYXWH2TLBR(objectModel)
+	'''
+	def crop_image(self, img, bb): # imagemCurrentFrame PIL
+		img_pil = Image.fromarray(np.uint8(img))
+		cropped = img_pil.crop(bb)
+		return cropped
+
+
+	def imshow(self):
+
+		cv2.imshow(self._titulo,self._imagemModels)
+
+	
+	def destroyWindow(self):
+
+		try:
+			cv2.destroyWindow(self._titulo)
+		except:
+			print('ERRO: Nao foi possivel destruir a janela')
+
+	
+	def _planarFromLinear(self,linear):
+		if linear == 0:
+			i = 0
+			j = 0
+		else: # verificar isso aqui
+			
+			j = linear%self._n_subwindows_per_dimension
+			i = int(linear/self._n_subwindows_per_dimension)%self._n_subwindows_per_dimension
+
+			''' errado	
+			linear = self._n_subwindows_per_dimension**2%linear
+			j = linear%self._n_subwindows_per_dimension
+			i = int(linear/self._n_subwindows_per_dimension)
+			'''
+		return i, j
+
+
+	def _get_frame_and_bb(self,BB_e_frame):
+
+		frameNumber = BB_e_frame.pop(-1)
+		return frameNumber, BB_e_frame
+
+
+	def _get_modelo_shrinked_image(self,BB,imagem): # retorna a imagem shrinked referente ao frame enviado
+		
+		
+		# 'imagem' com o shape okay, nao e (0,0,3)
+		bb_ltrb = self.convertYXWH2TLBR(BB)
+		image_cropped = self.crop_image(imagem,bb_ltrb) # entra np.array --> sai PIL image;
+		#image_cropped.show()
+		print('Bounding  box que provera o corte: ', BB)
+		print('tamaho da imagem recortada: ', image_cropped.size)
+		image_cropped =  np.array(image_cropped.getdata(),np.uint8).reshape(image_cropped.size[1],image_cropped.size[0],RGB)
+		print('o shape de image Cropped e: ', image_cropped.shape)
+		# abaixo esta dando imagem com dimensoes 0,0,3
+		resized_image = cv2.resize(image_cropped,(self._size_subwindow_per_dimension,self._size_subwindow_per_dimension ),interpolation=cv2.INTER_CUBIC)
+		cv2.imshow('imagem cv', resized_image)
+		return resized_image
+
+
+	def _adicionar_modelo_na_posicao(self,shrinked_image,i,j):
+
+		#atribuicao
+		print('O shape da imagem na rotina para adicionar modelos e: ',shrinked_image.shape)
+		
+		print('i inferior :', i, ' i superior :', i+1, 'j inferior: ', j , 'j superior: ', j+1)
+		self._imagemModels[i*self._size_subwindow_per_dimension:(i+1)*self._size_subwindow_per_dimension, j*self._size_subwindow_per_dimension:(j+1)*self._size_subwindow_per_dimension] = shrinked_image
+
+
+	def refreshObjectModel(self,objectModelList):
+
+		if len(objectModelList) == self._number_models:
+
+			pass
+
+		else:
+
+			for numero_do_modelo in range(self._number_models, len(objectModelList)):
+				
+				numero_do_frame, BB = self._get_frame_and_bb(objectModelList[numero_do_modelo])
+				i,j = self._planarFromLinear(numero_do_modelo)
+				shrinked = self._get_modelo_shrinked_image(BB, self._listFrames[numero_do_frame-1]) # porque o frame comeca do numero 1 e nao do numero 0. 
+				self._adicionar_modelo_na_posicao(shrinked,i,j)
+
+		# atualiza no numero o contador de modelos da classe
+		self._number_models = len(objectModelList)
+		self.imshow()
+
+'''
+imshow
+refreshModel
+
+'''
+	
+
+
+
+
 generalDescriptor = DeepDescription()
 
 def convertSimilatiry(siameseDistance):
@@ -330,6 +485,8 @@ def init_TLD_in_siameseFC(generated, imgs_pil, frame=1):
 	bb_list_good_window, _	= read_data(array_good_windows, size_good_windows.value, frame)
 	bb_good_windows_hull, _	= read_data(array_good_windows_hull, size_good_windows_hull.value, frame)
 
+	print('good_window Hull'.center(50,'*') , '\n', bb_good_windows_hull)
+
 	'''
 	print('lista de positivo:')
 	print(bb_list_positivo)
@@ -337,10 +494,13 @@ def init_TLD_in_siameseFC(generated, imgs_pil, frame=1):
 	print(bb_list_negativo)
 	print('fim')
 	'''
-	
+	print('init negativo')
 	addModel(generated, bb_list_negativo,	  generalDescriptor.negative_obj_model_bb, generalDescriptor.negative_obj_model_features, imgs_pil[POSICAO_PRIMEIRO_FRAME])
+	print('init positivo')
 	addModel(generated, bb_list_positivo,	  generalDescriptor.positive_obj_model_bb, generalDescriptor.positive_obj_model_features, imgs_pil[POSICAO_PRIMEIRO_FRAME]) 
+	print('init good window')
 	addModel(generated, bb_list_good_window,  generalDescriptor.good_windows_bb,	   generalDescriptor.good_windows_features,		  imgs_pil[POSICAO_PRIMEIRO_FRAME])
+	print('init good hull')
 	addModel(generated, bb_good_windows_hull, generalDescriptor.good_windows_hull_bb,  generalDescriptor.good_windows_hull_features,  imgs_pil[POSICAO_PRIMEIRO_FRAME])
 
 
@@ -482,6 +642,10 @@ def TLD_parte_2(generated, imgs_pil, frame):
 	lista_positive_simi_tracker_candidate = list( np.asarray( generalDescriptor.positive_similarity_tracker_candidate ).reshape(-1) )
 	lista_negative_simi_tracker_candidate = list( np.asarray( generalDescriptor.negative_similarity_tracker_candidate ).reshape(-1) )
 	
+	size_bb_tracker = c_int()
+
+	array_bb_tracker = [-1] * 4
+	array_bb_tracker = (c_float * 4) (*array_bb_tracker)
 	'''
 	print('len        negative_simi_tracker_candidate ): ', len(lista_negative_simi_tracker_candidate))
 	print('getLength  negative_simi_tracker_candidate ): ', getLength(lista_negative_simi_tracker_candidate))
@@ -520,10 +684,14 @@ def TLD_parte_2(generated, imgs_pil, frame):
 								  positive_simi_tracker, byref(size_pos_sim_tracker),
 								  negative_simi_tracker, byref(size_neg_sim_tracker),
 								  array_good_windows, byref(size_good_windows),
-								  array_good_windows_hull, byref(array_good_windows_hull))
+								  array_good_windows_hull, byref(array_good_windows_hull),
+								  array_bb_tracker, byref(size_bb_tracker))
 
 	bb_list_good_window, is_good_window_empty = read_data(array_good_windows, size_good_windows.value, frame)
 	bb_good_windows_hull, is_good_hull_empty = read_data(array_good_windows_hull, size_good_windows_hull.value, frame)
+	bb_single_element_tracker, _ = read_data(array_bb_tracker, size_bb_tracker.value, frame, 0)
+
+	print('Py New BB Tracker: ', bb_single_element_tracker)
 
 	posicao = frame - 1
 
@@ -536,6 +704,7 @@ def TLD_parte_2(generated, imgs_pil, frame):
 	generalDescriptor.negative_similarity_tracker_candidate = []
 
 	#return bb_list_good_window, is_good_window_empty, bb_good_windows_hull, is_good_hull_empty
+	return bb_single_element_tracker[0][:-1]
 
 def getOpts(opts):
 	print("config opts...")
@@ -749,6 +918,8 @@ def trackerEval(score, sx, targetPosition, window, opts):
 
 	return newTargetPosition, bestScale
 
+
+
 '''----------------------------------------main-----------------------------------------------------'''
 def main(_):
 	
@@ -865,9 +1036,22 @@ def main(_):
 	#~nao faca isso em casa
 	'''
 
+	'''
+	Criando exibicao de object Model no opencv
+	'''
+	imagemPosvModel =  np.zeros((TOTAL_PIXEL_DISPLAY_OBJECT_MODEL_ONE_DIM , TOTAL_PIXEL_DISPLAY_OBJECT_MODEL_ONE_DIM, RGB) , dtype=np.uint8)
+	imagemNegvModel =  np.zeros((TOTAL_PIXEL_DISPLAY_OBJECT_MODEL_ONE_DIM , TOTAL_PIXEL_DISPLAY_OBJECT_MODEL_ONE_DIM, RGB) , dtype=np.uint8)
+
+
+
+	visualizadorPositivo = Visualization(10, 50 , 'Visualizador Positivo', imgs)
+	visualizadorNegativo = Visualization(10, 50 , 'Visualizador Negativo', imgs)
+	#, size_subWindow,title, listFrames
+
 	for frame in range(POSICAO_PRIMEIRO_FRAME, nImgs):
 		print('')
 		print(('Estamos no frame ' + str(frame+1)).center(80,'*'))
+		bbTLD = [0,0,1,1]
 		if frame > POSICAO_PRIMEIRO_FRAME:
 			im = imgs[frame]
 			if(im.shape[-1] == 1):
@@ -886,7 +1070,10 @@ def main(_):
 			targetSize = (1-opts['scaleLr'])*targetSize+opts['scaleLr']*scaledTarget[newScale]
 
 			TLD_parte_1(generated, imgs_pil, frame+1) #Nao tem o frame 0, comeca no 1
-			TLD_parte_2(generated, imgs_pil, frame+1)
+			bbTLD = TLD_parte_2(generated, imgs_pil, frame+1)
+			print('negative obj model: ',generalDescriptor.negative_obj_model_bb)
+			visualizadorPositivo.refreshObjectModel(generalDescriptor.positive_obj_model_bb)
+			visualizadorNegativo.refreshObjectModel(generalDescriptor.negative_obj_model_bb)
 
 		else:
 			init_TLD_in_siameseFC(generated, imgs_pil, frame+1)
@@ -896,18 +1083,28 @@ def main(_):
 		br = tuple(np.round(rectPosition+targetSize).astype(int)[::-1])
 		imDraw = im.astype(np.uint8)
 		cv2.rectangle(imDraw, tl, br, (0, 255, 255), thickness=3)
+		try:
+			cv2.rectangle(imDraw,tuple([round(i) for i in bbTLD[:2]] ), tuple([round(i) for i in bbTLD[2:]] ),(255,255,0), thickness=2)
+		except: 
+			cv2.circle(imDraw,(30,30), 6,(0,50,255), 7)
 		cv2.imshow("tracking - siamese", imDraw)
+
 		cv2.waitKey(1)
 
 
+
+		generalDescriptor.positive_obj_model_bb
 	print(time.time()-tic)
 
 	
 	return
 
 def addModel(generated, bb_list, bb_acumulated_atribute, feature_acumulated_atribute, image):
+	print('bb_list: ',bb_list)
 	is_empty = True
-	for bb in bb_list:
+	for cont,bb in enumerate(bb_list):
+		print('laco: ', cont)
+		print('bounding box no laco: ', bb)
 		#print('bb: '.center(70,'#'))
 		#print(bb)
 		#print('type: ',type(bb[0]))
