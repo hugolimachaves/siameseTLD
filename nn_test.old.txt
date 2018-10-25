@@ -1,0 +1,5 @@
+!NN_TEST(conf) 			->			   conf > NN_THETA	(0.55)											[POSITIVO]
+NN_TEST_MARGIN_N(conf) 	-> 	NN_THETA - conf < NN_LAMBDA		->	conf >	 NN_THETA - NN_LAMBDA (0.45)	[NEGATIVO]
+
+NN_THETA 	= 	0.55
+NN_LAMBDA	=	0.1
