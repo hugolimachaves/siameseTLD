@@ -35,7 +35,8 @@
 #define WIND_LENGHT 10 	//Quantidade de frames que as features de contexto são mantidas
 
 #define PRINT_DEBUG 0
-#define PRINT_DEBUG_INTEGRATOR 1
+#define PRINT_DEBUG_INTEGRATOR 0
+#define PRINT_DEBUG_INTEGRATOR_DETECTOR 0
 
 static 	int valid = 0, 	//0 = NCC, 1 = media, 2 = alien
 			conf = 0; 	//0 = NCC, 1 = media
@@ -503,7 +504,8 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 						float *similaridade_positiva_bb_tracker, int *size_pos_tracker,
 						float *similaridade_negativa_bb_tracker, int *size_neg_tracker,
 			            float *array_good_windows, int *size_good_windows,
-			            float *array_good_windows_hull, int *size_good_windows_hull){
+			            float *array_good_windows_hull, int *size_good_windows_hull)
+{
 	static bool tracker_valid = false;
 	t++;
 	if(PRINT_DEBUG_INTEGRATOR)
@@ -524,12 +526,6 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 	if(tracked && t_size.width > 0 && t_size.height > 0)
 	{
 
-
-		//SUSPEITA DE QUEM NEM AQUI ESTAMOS ENTRANDO...
-
-
-
-
 		if(PRINT_DEBUG_INTEGRATOR)
 			std::cout<<"C++ in IntegratorLearning - se o tacker teve retorno valido"<<std::endl;
 
@@ -545,6 +541,21 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 			case 0: //NCC - (esse e padrao do TLD)
 				SMOOTH(frame, blur_img);
 				normalize(frame, blur_img, t_bb, 0, 0, t_candidate.image, t_candidate.ens_img, t_candidate.nn_img);
+
+				if(PRINT_DEBUG_INTEGRATOR)
+				{
+					std::cout<<"C++ in IntegratorLearning - dados sobre conservativeSimilarity tracker abaixo"<<std::endl;
+
+					for(int ii = 0 ; ii < *size_pos_tracker; ii++)
+					{
+						std::cout<<"C++ in IntegratorLearning - Similaridade positiva do tracker interna no IntegratorLearning "<< ii<<" : "<<similaridade_positiva_bb_tracker[ii]<<std::endl;
+					}
+
+					for(int ii = 0 ; ii < *size_neg_tracker; ii++)
+					{
+						std::cout<<"C++ in IntegratorLearning - Similaridade negativa do tracker interna no IntegratorLearning "<< ii<<" : "<<similaridade_negativa_bb_tracker[ii]<<std::endl;
+					}
+				}
 
 				t_conf = conservativeSimilarity(t_candidate.nn_img, similaridade_positiva_bb_tracker, size_pos_tracker,
                                                 similaridade_negativa_bb_tracker, size_neg_tracker);
@@ -569,24 +580,18 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 			break;
 		}
 
-		if(PRINT_DEBUG)
+		if(PRINT_DEBUG_INTEGRATOR)
 		{
 			std::cout<<"C++ t_conf in IntegratorLearning: "<<t_conf<<std::endl;
-			if(detected)
-			{
-				std::cout<<"detectado!"<<std::endl;
-			}
-			else
-			{
-				std::cout<<"NAO detectado!"<<std::endl;
-			}
+
 		}
-
-
-
 
 		if(detected) // se tambem houver deteccao
 		{
+			if(PRINT_DEBUG_INTEGRATOR_DETECTOR)
+			{
+				std::cout<<"\nC++  in IntegratorLearning  - DETECTADO!"<<std::endl;
+			}
 			switch(conf)
 			{
 				case 0: //NCC - (esse e padrao do TLD)
@@ -594,8 +599,14 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 					{
 						SMOOTH(frame, blur_img);
 						normalize(frame, blur_img, t_bb, 0, 0, t_candidate.image, t_candidate.ens_img, t_candidate.nn_img);
+
+						if(PRINT_DEBUG_INTEGRATOR_DETECTOR)
+						{
+							std::cout<<"C++ in IntegratorLearning - dados sobre conservativeSimilarity detector abaixo"<<std::endl;
+						}
 						t_conf = conservativeSimilarity(t_candidate.nn_img, similaridade_positiva_bb_tracker, size_pos_tracker, similaridade_negativa_bb_tracker, size_neg_tracker);
-						if(PRINT_DEBUG_INTEGRATOR)
+
+						if(PRINT_DEBUG_INTEGRATOR_DETECTOR)
 						{
 							std::cout<<"C++ in IntegratorLearning  se o detector teve retorno valido"<<std::endl;
 							std::cout<<"C++ in IntegratorLearning  conservativeSimilarity do detector: "<<t_conf<<std::endl;
@@ -610,7 +621,8 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 				break;
 			}
 
-			if(most_confident != -1){ //Reinicializa o tracker
+			if(most_confident != -1)
+			{ //Reinicializa o tracker
 				output[0] = detector_positions[most_confident][0];
 				output[1] = detector_positions[most_confident][1];
 				output[2] = detector_positions[most_confident][2];
@@ -618,6 +630,15 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 				tracker_valid = false;
 			}
 		}
+		else
+		{
+			if(PRINT_DEBUG_INTEGRATOR_DETECTOR)
+			{
+				std::cout<<"\nC++  in IntegratorLearning  - NAO DETECTADO!"<<std::endl;
+			}
+			//NOP
+		}
+
 	}
 
 	else
@@ -646,7 +667,7 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 		}
 	}
 
-	std::cout << "tracker_valid: " << tracker_valid << std::endl;
+	std::cout <<"C++  in IntegratorLearning -  tracker_valid: " << tracker_valid << std::endl;
 
 	if(tracker_valid && enable_detect)
 	{
@@ -667,7 +688,7 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 			resize(t_object, t_object, Size(200,200));
 			sprintf(conf, "%.2f", t_conf);
 			putText(t_object, conf, Point2f(15,15), FONT_HERSHEY_COMPLEX_SMALL, 0.7, Scalar(255.));
-			std::cout<<"Nao entrar aqui se desabled _DEBUG_IL"<<std::endl;
+
 			imshow(TRACKER_WINDOW, t_object);
 			t_object.release();
 		}
@@ -679,7 +700,7 @@ bool IntegratorLearning(Mat frame, BoundingBox t_bb, vector<BoundingBox> detecto
 			resize(d_object, d_object, Size(200,200));
 			sprintf(conf, "%.2f", max_d_conf);
 			putText(d_object, conf, Point2f(15,15), FONT_HERSHEY_COMPLEX_SMALL, 0.7, Scalar(255.));
-			std::cout<<"Nao entrar aqui se desabled _DEBUG_IL"<<std::endl;
+
 			imshow(DETECTOR_WINDOW, d_object);
 		}
 	}

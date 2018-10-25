@@ -3,7 +3,7 @@
 #include "TLD.hpp"
 #include <fstream>
 
-
+#define DEBUG1 0
 
 #ifdef _WIN32
 	#define CLEAR() system("cls");
@@ -681,6 +681,16 @@ void TLD_part_2(float *similaridade_positiva_candidates, int *size_sim_pos_cand,
 	clock_t start_t, end_t;
 	double elapsed;
     unnorm_object_model_clear();
+
+
+    if(DEBUG1)
+    {
+    	for(int i = 0; i < *size_sim_pos_tracker; i++)
+    	{
+    		std::cout<<"C++ in TLD / TLD_part_2 - similaridade_positiva_bb_tracker: "<<similaridade_positiva_bb_tracker[i]<<std::endl;
+
+    	}
+    }
 
 	if(has_bb)
 	{
