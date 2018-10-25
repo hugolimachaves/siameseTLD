@@ -15,8 +15,11 @@ from ctypes import *
 from sklearn.neighbors import KNeighborsClassifier
 import random as rn
 
-DEBUG_PRINT_ARRAY = True
-MOSTRAR_OBJ_MODEL = True
+
+DEBUG_TRACKER = False
+DEBUG_PRINT_ARRAY = False
+MOSTRAR_OBJ_MODEL = False
+DEBUG_3 = False
 DIM_DESCRIPTOR = 256
 ONE_DIMENSION = 1
 ATOMIC_SIZE = 88
@@ -33,7 +36,7 @@ POSICAO_SEGUNDO_FRAME = 1
 PRIMEIRO_FRAME = 1
 SEGUNDO_FRAME = 2
 ULTIMO_FRAME = -1
-K = 0.005#0.04
+K = 0.01#0.04
 MAX_OBJECT_MODEL_ONE_DIM = 10
 OBJECT_MODEL_DISPLAY_SIZE_ONE_DIM = 50
 TOTAL_PIXEL_DISPLAY_OBJECT_MODEL_ONE_DIM = MAX_OBJECT_MODEL_ONE_DIM * OBJECT_MODEL_DISPLAY_SIZE_ONE_DIM
@@ -46,7 +49,7 @@ tf.set_random_seed(1)
 
 
 
-NOME_VIDEO = 'bag'
+NOME_VIDEO = 'ball1'
 YML_FILE_NAME = 'parameters.yml'
 CAMINHO_EXEMPLO_VOT2015 = '/home/hugo/Documents/Mestrado/vot2015/' + NOME_VIDEO
 #CAMINHO_EXEMPLO_DATASET_TLD = '/home/hugo/Documents/Mestrado/codigoRastreador/dataset/exemplo/01-Light_video00001'
@@ -96,19 +99,6 @@ class Generation:
 
 		cropped = img.crop([left,top,right,bottom])
 		
-
-	
-		aux1 = np.array(img)
-		aux2 = np.array(cropped)
-		print('aux1.shape: ',aux1.shape, ' aux1 type: ', type(aux1) )
-
-		print('aux2.shape: ',aux2.shape, ' aux2 type: ', type(aux2) )
-		#deu width e height -1 aqui!!!!!
-		#assert(1==2) # [e pra vc olhar o que eu escrevi em cima
-		print('bb: ',bb)
-		cv2.imshow('img',aux1)
-		cv2.imshow('cropped',aux2)
-
 		return cropped
 
 	'''
@@ -264,23 +254,19 @@ class Visualization:
 		# 'imagem' com o shape okay, nao e (0,0,3)
 		bb_ltrb = self.convertYXWH2TLBR(BB)
 		image_cropped = self.crop_image(imagem,bb_ltrb) # entra np.array --> sai PIL image;
-		#image_cropped.show()
-		print('Bounding  box que provera o corte: ', BB)
-		print('tamaho da imagem recortada: ', image_cropped.size)
 		image_cropped =  np.array(image_cropped.getdata(),np.uint8).reshape(image_cropped.size[1],image_cropped.size[0],RGB)
-		print('o shape de image Cropped e: ', image_cropped.shape)
 		# abaixo esta dando imagem com dimensoes 0,0,3
 		resized_image = cv2.resize(image_cropped,(self._size_subwindow_per_dimension,self._size_subwindow_per_dimension ),interpolation=cv2.INTER_CUBIC)
-		cv2.imshow('imagem cv', resized_image)
+		#cv2.imshow('imagem cv', resized_image)
 		return resized_image
 
 
 	def _adicionar_modelo_na_posicao(self,shrinked_image,i,j):
 
 		#atribuicao
-		print('O shape da imagem na rotina para adicionar modelos e: ',shrinked_image.shape)
-		
-		print('i inferior :', i, ' i superior :', i+1, 'j inferior: ', j , 'j superior: ', j+1)
+		if(DEBUG_3):
+			print('O shape da imagem na rotina para adicionar modelos e: ',shrinked_image.shape)
+			print('i inferior :', i, ' i superior :', i+1, 'j inferior: ', j , 'j superior: ', j+1)
 		self._imagemModels[i*self._size_subwindow_per_dimension:(i+1)*self._size_subwindow_per_dimension, j*self._size_subwindow_per_dimension:(j+1)*self._size_subwindow_per_dimension] = shrinked_image
 
 
@@ -293,7 +279,7 @@ class Visualization:
 		else:
 
 			for numero_do_modelo in range(self._number_models, len(objectModelList)):
-				
+				#print('Entrando na atulaizacao de modelo')
 				numero_do_frame, BB = self._get_frame_and_bb(objectModelList[numero_do_modelo])
 				i,j = self._planarFromLinear(numero_do_modelo)
 				shrinked = self._get_modelo_shrinked_image(BB, self._listFrames[numero_do_frame-1]) # porque o frame comeca do numero 1 e nao do numero 0. 
@@ -678,6 +664,12 @@ def TLD_parte_2(generated, imgs_pil, frame):
 
 	array_good_windows	  = (c_float * ARRAY_SIZE) (*array_good_windows)
 	array_good_windows_hull = (c_float * ARRAY_SIZE) (*array_good_windows_hull)
+
+	if(DEBUG_TRACKER):
+		print('Positive similarity do tracker'.center(50,'&'))
+		print(*positive_simi_tracker)
+		print('~Positive similarity do tracker'.center(50,'&'))
+
 
 	shared_library.TLD_function_2(positive_simi_cand, byref(size_pos_sim_cand),
 								  negative_simi_cand, byref(size_neg_sim_cand),
@@ -1071,7 +1063,8 @@ def main(_):
 
 			TLD_parte_1(generated, imgs_pil, frame+1) #Nao tem o frame 0, comeca no 1
 			bbTLD = TLD_parte_2(generated, imgs_pil, frame+1)
-			print('negative obj model: ',generalDescriptor.negative_obj_model_bb)
+			print('negative obj model length: ', len(generalDescriptor.negative_obj_model_bb))
+			print('positive obj model length: ', len(generalDescriptor.positive_obj_model_bb))
 			visualizadorPositivo.refreshObjectModel(generalDescriptor.positive_obj_model_bb)
 			visualizadorNegativo.refreshObjectModel(generalDescriptor.negative_obj_model_bb)
 
@@ -1093,6 +1086,7 @@ def main(_):
 
 
 
+		
 		generalDescriptor.positive_obj_model_bb
 	print(time.time()-tic)
 
@@ -1100,14 +1094,8 @@ def main(_):
 	return
 
 def addModel(generated, bb_list, bb_acumulated_atribute, feature_acumulated_atribute, image):
-	print('bb_list: ',bb_list)
 	is_empty = True
 	for cont,bb in enumerate(bb_list):
-		print('laco: ', cont)
-		print('bounding box no laco: ', bb)
-		#print('bb: '.center(70,'#'))
-		#print(bb)
-		#print('type: ',type(bb[0]))
 		if(not (True in [math.isnan(item) for item in bb])):
 			is_empty = False
 			currentFeature = generated.getDescriptor(bb, image)
