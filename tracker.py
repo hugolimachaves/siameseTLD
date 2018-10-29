@@ -49,7 +49,7 @@ tf.set_random_seed(1)
 
 
 
-NOME_VIDEO = 'ball1'
+NOME_VIDEO = 'bag'
 YML_FILE_NAME = 'parameters.yml'
 CAMINHO_EXEMPLO_VOT2015 = '/home/hugo/Documents/Mestrado/vot2015/' + NOME_VIDEO
 #CAMINHO_EXEMPLO_DATASET_TLD = '/home/hugo/Documents/Mestrado/codigoRastreador/dataset/exemplo/01-Light_video00001'
@@ -90,16 +90,72 @@ class Generation:
 		tf.initialize_all_variables().run(session=self.tensorFlowSession)
 		
 
+	def  extend(self,bb,margin):
+		bb_aux = []
+		bb_aux.append(round(bb[0] - bb[2]/2 - abs((bb[2]))*margin))
+		bb_aux.append(round(bb[1] - bb[3]/2 - abs((bb[3]))*margin))
+		bb_aux.append(round(bb[2] + bb[2]/2 + abs((bb[2]))*margin))
+		bb_aux.append(round(bb[3] + bb[3]/2 + abs((bb[3]))*margin))
+		return bb_aux
+
+
 	#passando Bounding Box no formato Y,X,W,H, retornando left, top, right, botton
 	def get_image_cropped(self, img, bb): # imagemCurrentFrame PIL
 		left	= round(bb[0] - (bb[2]/2))
-		top	    = round(bb[1] - (bb[3])/2)
+		top	    = round(bb[1] - (bb[3]/2))
 		right   = round(bb[2] + left)
 		bottom  = round(bb[3] + top)
 
 		cropped = img.crop([left,top,right,bottom])
 		
 		return cropped
+
+	def convertYXWH2LTRB(self,yxwh):
+
+		ltrb =[]
+		ltrb.append(yxwh[0] - round(yxwh[3]/2) )
+		ltrb.append(yxwh[1] - round(yxwh[2]/2) )
+		ltrb.append(yxwh[0] + round(yxwh[3]/2) )
+		ltrb.append(yxwh[1] + round(yxwh[2]/2) )
+		return ltrb
+
+	def get_image_cropped2(self, img, bb, margem):
+
+		bb = self.convertYXWH2LTRB(bb[:4])
+	
+
+		bb = self.extend(bb,margem)
+
+		img_np = np.array(img)
+
+		mean_color = [np.mean(img_np[:,:,0]), np.mean(img_np[:,:,1]), np.mean(img_np[:,:,2])]
+		shape_original = img_np.shape[:2]
+		boundary = [0, 0, img_np.shape[1] , img_np.shape[0]]
+		margin = []
+
+		for i in range(len(boundary)):
+			if(i < 2):
+				margin.append(min(bb[i] - boundary[i], 0))
+			else:
+				margin.append(min(boundary[i] - bb[i], 0))
+
+		img_cropped = img.crop(bb)
+		img_np = np.array(img_cropped)
+		
+		for i in range(RGB):
+
+			if(margin[0] is not 0):
+				img_np[0:-margin[0], :, i] = mean_color[i]
+			if(margin[1] is not 0):
+				img_np[:, 0:-margin[1], i] = mean_color[i]
+			if(margin[2] is not 0):
+				img_np[img_np.shape[0]+margin[3]:img_np.shape[0], :, i] = mean_color[i]
+			if(margin[3] is not 0):
+				img_np[:, img_np.shape[1]+margin[2]:img_np.shape[1], i] = mean_color[i]
+
+		img_cropped = Image.fromarray(img_np)
+
+		return img_cropped
 
 	'''
 	def get_image_cropped_ltrb(self, img, bb): # imagemCurrentFrame PIL
@@ -113,7 +169,7 @@ class Generation:
 	'''
 
 	def getDescriptor(self,bb,imageSource): # zMinimumFeatures = sess.run(zMinimumPreTrained, feed_dict={minimumSiameseNetPlaceHolder: zCropMinimum})
-		imImageSource = self.get_image_cropped(imageSource,bb)
+		imImageSource = self.get_image_cropped2(imageSource,bb, 0.35) ##MARGEM
 		
 		#imImageSource.show()
 	
@@ -190,7 +246,7 @@ class Visualization:
 		self._titulo = title
 		self._listFrames = listFrames
 
-	def convertYXWH2TLBR(self,yxwh):
+	def convertYXWH2LTRB(self,yxwh):
 
 		ltrb =[]
 		ltrb.append(yxwh[0] - round(yxwh[3]/2) )
@@ -204,9 +260,9 @@ class Visualization:
 		objectModel = list(objectModel)
 		if len(objectModeL== 5):
 			objectModel = objectModel(:-1)
-		objectModel =  =convertYXWH2TLBR(objectModel)
+		objectModel =  =convertYXWH2LTRB(objectModel)
 	'''
-	def crop_image(self, img, bb): # imagemCurrentFrame PIL
+	def crop_image(self, img, bb, percentMargin = 0): # imagemCurrentFrame PIL
 		img_pil = Image.fromarray(np.uint8(img))
 		cropped = img_pil.crop(bb)
 		return cropped
@@ -252,7 +308,7 @@ class Visualization:
 		
 		
 		# 'imagem' com o shape okay, nao e (0,0,3)
-		bb_ltrb = self.convertYXWH2TLBR(BB)
+		bb_ltrb = self.convertYXWH2LTRB(BB)
 		image_cropped = self.crop_image(imagem,bb_ltrb) # entra np.array --> sai PIL image;
 		image_cropped =  np.array(image_cropped.getdata(),np.uint8).reshape(image_cropped.size[1],image_cropped.size[0],RGB)
 		# abaixo esta dando imagem com dimensoes 0,0,3
@@ -282,7 +338,8 @@ class Visualization:
 				#print('Entrando na atulaizacao de modelo')
 				numero_do_frame, BB = self._get_frame_and_bb(objectModelList[numero_do_modelo])
 				i,j = self._planarFromLinear(numero_do_modelo)
-				shrinked = self._get_modelo_shrinked_image(BB, self._listFrames[numero_do_frame-1]) # porque o frame comeca do numero 1 e nao do numero 0. 
+				shrinked = self._get_modelo_shrinked_image(BB, self._listFrames[numero_do_frame-1]) # porque o frame comeca do numero 1 e nao do numero 0. 7
+				#cv2.imshow('teste',shrinked)
 				self._adicionar_modelo_na_posicao(shrinked,i,j)
 
 		# atualiza no numero o contador de modelos da classe
