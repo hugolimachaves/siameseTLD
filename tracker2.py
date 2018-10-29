@@ -49,7 +49,7 @@ tf.set_random_seed(1)
 
 
 
-NOME_VIDEO = 'racing'
+NOME_VIDEO = 'bag'
 YML_FILE_NAME = 'parameters.yml'
 CAMINHO_EXEMPLO_VOT2015 = '/home/hugo/Documents/Mestrado/vot2015/' + NOME_VIDEO
 #CAMINHO_EXEMPLO_DATASET_TLD = '/home/hugo/Documents/Mestrado/codigoRastreador/dataset/exemplo/01-Light_video00001'
@@ -1163,4 +1163,3 @@ def addModel(generated, bb_list, bb_acumulated_atribute, feature_acumulated_atri
 
 if __name__=='__main__':
 	tf.app.run()
-	
