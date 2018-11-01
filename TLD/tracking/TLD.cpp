@@ -632,7 +632,7 @@ void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
 					bb_tracker[0] = tBB[0] + widthBB (tBB) / 2;
 					bb_tracker[1] = tBB[1] + heightBB(tBB) / 2;
 					bb_tracker[2] = widthBB (tBB);
-                    bb_tracker[3] = heightBB(tBB);
+					bb_tracker[3] = heightBB(tBB);
 
 					*size_bb_tracker = 4;
 				}
@@ -682,7 +682,6 @@ void TLD_part_2(float *similaridade_positiva_candidates, int *size_sim_pos_cand,
 	double elapsed;
     unnorm_object_model_clear();
 
-
     if(DEBUG1)
     {
     	for(int i = 0; i < *size_sim_pos_tracker; i++)
@@ -690,6 +689,10 @@ void TLD_part_2(float *similaridade_positiva_candidates, int *size_sim_pos_cand,
     		std::cout<<"C++ in TLD / TLD_part_2 - similaridade_positiva_bb_tracker: "<<similaridade_positiva_bb_tracker[i]<<std::endl;
 
     	}
+    }
+
+    for(int i=0; i<4; i++){
+    	tBB[i] = bb_tracker[i];
     }
 
 	if(has_bb)
@@ -707,21 +710,6 @@ void TLD_part_2(float *similaridade_positiva_candidates, int *size_sim_pos_cand,
 		}
 
 		start_t = clock();
-
-        /*
-		//printar d_positions
-		vector<BoundingBox>::iterator it;
-		for(it = d_positions.begin(); it != d_positions.end(); it++ )
-		{
-
-			std::cout<<"\nC++ - posicoes: "<<std::endl;
-			for (int innerIt = 0; innerIt < 4; innerIt++)
-			{
-				std::cout<<it->at(innerIt)<<std::endl;
-			}
-
-		}
-		*/
 
 		final_bb = IntegratorLearning(next_frame, tBB, d_positions, d_conf, tracked, detected, new_bb, object, enable_detect,
 									  similaridade_positiva_bb_tracker, size_sim_pos_tracker,

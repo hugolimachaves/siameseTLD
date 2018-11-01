@@ -28,12 +28,6 @@
 #define THE_SAME			0.95 //Acima dessa confiabilidade eh considerada a msma amostra
 #define NN_THETA 			0.55//0.6 //Margem do classificador 1NN
 
-#define NN_THETA_P          0.55
-#define NN_THETA_N          0.45
-
-#define NN_TEST_P(r_conf) (r_conf > NN_THETA_P)
-#define NN_TEST_N(r_conf) (r_conf > NN_THETA_N)
-
 #define VARIANCE_THRESHOLD 	0.5		//Porcentagem mínima da variância do candidato
 #define POSITIVE_WINDOW 	"Positive samples"
 #define NEGATIVE_WINDOW 	"Negative samples"
@@ -44,7 +38,7 @@
 #define NN_TEST_MARGIN_P(r_conf) (r_conf - NN_THETA <= NN_LAMBDA) //Fracos positivos e negativos
 #define NN_TEST_MARGIN_N(r_conf) (NN_THETA - r_conf < NN_LAMBDA) //Fracos negativos e positivos
 #define DEBUG_CODIGO 0
-#define DEBUG_CODIGO2 1
+#define DEBUG_PRIMEIRA_ANALISE_SIMILARIDADE 1
 
 
 // Kevyn
@@ -140,10 +134,6 @@ Candidate::~Candidate()
 
 double modelSimilatiryRetrain(vector<ModelSample> model, Mat pattern, int &isin, float *similaridade, int *size_sim)
 {
-
-	if (DEBUG_CODIGO)
-        std::cout<<"C++ modelSimilarityRetrain - in Detector"<<std::endl;
-
 	if(model.empty())
 	{
 		isin = -1;
@@ -158,13 +148,11 @@ double modelSimilatiryRetrain(vector<ModelSample> model, Mat pattern, int &isin,
 
 	max_sim = similaridade[0];
 	max_pos = 0;
-	if(DEBUG_CODIGO)
-		std::cout<<"C++ in Detector / modelSimilatiryRetrain - similaridade[0]  "<<similaridade[0]<<std::endl;
+	std::cout<<"C++ similaridade[i] "<<similaridade[0]<<std::endl;
 
 	for(i=1; i<*size_sim; i++)
 	{
-		if(DEBUG_CODIGO)
-        	std::cout<<"C++ in Detector / modelSimilatiryRetrain - similaridade["<<i<<"] "<<similaridade[i]<<std::endl;
+        std::cout<<"C++ similaridade[i] "<<similaridade[i]<<std::endl;
         sim = similaridade[i];
 		if(sim > max_sim)
 		{
@@ -180,10 +168,8 @@ double modelSimilatiryRetrain(vector<ModelSample> model, Mat pattern, int &isin,
 }
 
 //Similaridade entre amostra e modelo. No intervalo [0., 1.]
-double modelSimilatiryTrain(vector<ModelSample> model, Mat pattern, int &isin)
-{
-	if(model.empty())
-	{
+double modelSimilatiryTrain(vector<ModelSample> model, Mat pattern, int &isin){
+	if(model.empty()){
 		isin = -1;
 		return 0.;
 	}
@@ -197,11 +183,9 @@ double modelSimilatiryTrain(vector<ModelSample> model, Mat pattern, int &isin)
 	max_sim = (*(model.begin())).similarity(pattern);
 	max_pos = 0;
 
-	for(sample = model.begin()+1; sample != model.end(); sample++, i++)
-	{
+	for(sample = model.begin()+1; sample != model.end(); sample++, i++){
 		sim = (*sample).similarity(pattern);
-		if(sim > max_sim)
-		{
+		if(sim > max_sim){
 			max_sim = sim;
 			max_pos = i;
 		}
@@ -245,13 +229,12 @@ double relativeSimilarityRetrain(Mat pattern, int &isin_p, int &isin_n,
 	if(object_model[0].empty()) return 1.;
 
 
-	neg_sim = modelSimilatiryRetrain(object_model[0], pattern, isin_n, similaridade_negativa_bb_tracker, size_neg_tracker); //em [0., 1.]
-	pos_sim = modelSimilatiryRetrain(object_model[1], pattern, isin_p, similaridade_positiva_bb_tracker, size_pos_tracker); //em [0., 1.]
+	neg_sim = modelSimilatiryRetrain(object_model[0], pattern, isin_n, similaridade_negativa_bb_tracker, size_pos_tracker); //em [0., 1.]
+	pos_sim = modelSimilatiryRetrain(object_model[1], pattern, isin_p, similaridade_positiva_bb_tracker, size_neg_tracker); //em [0., 1.]
 
-	if (DEBUG_CODIGO)
-	{
-        std::cout<<"C++ relativeSimilarityRetrain - in Detector: neg_sim "<<neg_sim<<std::endl;
-        std::cout<<"C++ relativeSimilarityRetrain - in Detector: pos_sim "<<pos_sim<<std::endl;
+	if (DEBUG_CODIGO){
+        std::cout<<"C++ neg_sim "<<neg_sim<<std::endl;
+        std::cout<<"C++ pos_sim "<<pos_sim<<std::endl;
 	}
 //	if(pos_sim + neg_sim != 0) sim = pos_sim / (pos_sim + neg_sim);
 //	else sim = 0.;
@@ -639,43 +622,31 @@ void setOverlapingWindows(BoundingBox position, float *array_good_windows, int *
 
 	/// Kevyn
 	*size_good_windows_hull = 4;
-	std::cout << "good_windows.size(): " << good_windows.size() << std::endl;
+	//std::cout << "good_windows.size(): " << good_windows.size() << std::endl;
 	*size_good_windows = 4 * good_windows.size();
 
 	int obj, i=0;
 
     //TODO Selecao aleatoria
 
-
-    if(std::isnan(good_windows_hull[2])||std::isnan(good_windows_hull[0]))
-    {
+    if(std::isnan(good_windows_hull[2])||std::isnan(good_windows_hull[0])){
     	array_good_windows_hull[0] = good_windows_hull[0] / 2;
     	array_good_windows_hull[2] = 0.;
     }
-	else
-	{
-		array_good_windows_hull[0] = good_windows_hull[0] + (good_windows_hull[2] - good_windows_hull[0] + 1) / 2; // PADRAO YXWH
-		array_good_windows_hull[2] = good_windows_hull[2] - good_windows_hull[0];
-		array_good_windows_hull[3] = good_windows_hull[3] - good_windows_hull[1];
+	else{
+		array_good_windows_hull[0] = good_windows_hull[0] + (good_windows_hull[2] - good_windows_hull[0] + 1) / 2;
 	}
 
-	if(std::isnan(good_windows_hull[3])||std::isnan(good_windows_hull[1]))
-	{
+	if(std::isnan(good_windows_hull[3])||std::isnan(good_windows_hull[1])){
     	array_good_windows_hull[1] = good_windows_hull[1] / 2;
     	array_good_windows_hull[3] = 0.;
 	}
-
-	else
-	{
-    	array_good_windows_hull[1] = good_windows_hull[1] + (good_windows_hull[3] - good_windows_hull[1] + 1) / 2; // PADRAO YXWH
-    	array_good_windows_hull[2] = good_windows_hull[2] - good_windows_hull[0];
-		array_good_windows_hull[3] = good_windows_hull[3] - good_windows_hull[1];
+	else{
+    	array_good_windows_hull[1] = good_windows_hull[1] + (good_windows_hull[3] - good_windows_hull[1] + 1) / 2;
 	}
 
     obj = 0;
-
-	for(int i=0; i<*size_good_windows; i+=4)
-	{
+	for(int i=0; i<*size_good_windows; i+=4){
 		array_good_windows[i]   = good_windows[obj][0] + widthBB (good_windows[obj]) / 2;
 		array_good_windows[i+1] = good_windows[obj][1] + heightBB(good_windows[obj]) / 2;
 		array_good_windows[i+2] = widthBB (good_windows[obj]);
@@ -985,6 +956,9 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive, 
 			///end
 			conf = relativeSimilarityTrain((*sample).nn_img, isin_p, isin_n);
 
+            if(DEBUG_PRIMEIRA_ANALISE_SIMILARIDADE){
+                std::cout<<"C++ conf = "<<conf<<std::endl;
+            }
 			//if(NN_TEST_MARGIN_P(conf)){ //Falsos negativos e fracos positivos
 			//std::cout<<"C++ conf: "<<conf<<std::endl;
 			if(!NN_TEST(conf))
@@ -1013,6 +987,10 @@ void nnTrain(bool show, float *array_object_model_positive, int *size_positive, 
 			 unnorm_sample = bad_windows.begin() + (*index) - g_size;
 			///end
 			conf = relativeSimilarityTrain((*sample).nn_img, isin_p, isin_n);
+
+            if(DEBUG_PRIMEIRA_ANALISE_SIMILARIDADE){
+                std::cout<<"C++ conf = "<<conf<<std::endl;
+            }
 
 			if(NN_TEST_MARGIN_N(conf))
 			{ //Falso positivo e fracos negativos
@@ -1196,6 +1174,15 @@ void nnRetrain(bool show, float *similaridade_positiva_bb_tracker, int *size_pos
 			*/
 			conf = relativeSimilarityTrain((*sample).nn_img, isin_p, isin_n);
 
+			if(DEBUG_CODIGO)
+                std::cout << "C++ conf = "<< conf << std::endl;
+
+            if(DEBUG_PRIMEIRA_ANALISE_SIMILARIDADE){
+                std::cout<<"C++ conf = "<<conf<<std::endl;
+            }
+            //std::cout<<"    Resultado if: "<<!NN_TEST(conf)<<std::endl;
+			//conf = 0.6;// // POR FAVOR, VAMOS TIRAR ISSO DAAQUI
+
 			//if(NN_TEST_MARGIN_P(conf)){ //Falsos negativos e fracos positivos
 			if(!NN_TEST(conf)){ //Falsos negativos
 				if(isin_p == -1 || isin_p == (int)object_model[1].size() - 1){
@@ -1229,6 +1216,10 @@ void nnRetrain(bool show, float *similaridade_positiva_bb_tracker, int *size_pos
 
             if(DEBUG_CODIGO)
                 std::cout << "C++ conf = "<< conf << std::endl;
+
+            if(DEBUG_PRIMEIRA_ANALISE_SIMILARIDADE){
+                std::cout<<"C++ conf = "<<conf<<std::endl;
+            }
 			//conf = 0.6;// // POR FAVOR, VAMOS TIRAR ISSO DAAQUI
 
 			if(NN_TEST_MARGIN_N(conf)){ //Falso positivo e fracos negativos
@@ -1252,10 +1243,9 @@ bool Retrain(Mat frame, BoundingBox &position,
              float *array_good_windows,               int *size_good_windows,
              float *array_good_windows_hull,          int *size_good_windows_hull){
 
-    if (DEBUG_CODIGO)
-    {
+    if (DEBUG_CODIGO){
         std::cout<<"C++ Retrain - in Detector"<<std::endl;
-        std::cout<<"C++ in Detector - Retrain - size_neg_tracker "<<*size_neg_tracker<<std::endl;
+        //std::cout<<"size_neg_tracker "<<*size_neg_tracker<<std::endl;
     }
 	clock_t start_g = clock();
 
@@ -1270,8 +1260,7 @@ bool Retrain(Mat frame, BoundingBox &position,
 	ModelSample t_answer;
 	int isin_n, isin_p;
 
-	if(bb_width < MIN_BB || bb_height < MIN_BB || bb_width > frame_width || bb_height > frame_width)
-	{
+	if(bb_width < MIN_BB || bb_height < MIN_BB || bb_width > frame_width || bb_height > frame_width){
 		printf("Invalid size\n");
 		return false;
 	}
@@ -1279,23 +1268,6 @@ bool Retrain(Mat frame, BoundingBox &position,
 	SMOOTH(frame, blur_img);
 	/// Normalização dentro do Retrain
 	normalize(frame, blur_img, position, 0, 0, t_answer.image, t_answer.ens_img, t_answer.nn_img);
-
-	if(DEBUG_CODIGO)
-	{
-		for(int ii = 0; ii < *size_pos_tracker; ii++)
-		{
-			std::cout<<"C++ Retrain - in Detector - similaridade_positiva_bb_tracker["<< ii<<"] "<< similaridade_positiva_bb_tracker[ii]<<std::endl;
-
-		}
-
-		for(int ii = 0; ii < *size_neg_tracker; ii++)
-		{
-			std::cout<<"C++ Retrain - in Detector - similaridade_negativa_bb_tracker["<< ii<<"] "<< similaridade_negativa_bb_tracker[ii]<<std::endl;
-		}
-
-
-	}
-
 	/*
 	r_sim = relativeSimilarityRetrain(t_answer.nn_img, isin_p, isin_n,
                                       similaridade_positiva_bb_tracker, size_pos_tracker,
@@ -1312,8 +1284,7 @@ bool Retrain(Mat frame, BoundingBox &position,
 	setOverlapingWindows(position, array_good_windows, size_good_windows, array_good_windows_hull, size_good_windows_hull);
 
 	//Baixa variância || Forte negativo (Não é fraco negativo e nem positivo). Mudança brusca. || Similaridade forte com os negativos
-	if(!VAR_TEST(*var))
-	{
+	if(!VAR_TEST(*var)){
 		printf("Low variance\n");
 		free(var);
 		t_answer.image.release();
@@ -1321,8 +1292,7 @@ bool Retrain(Mat frame, BoundingBox &position,
 		t_answer.nn_img.release();
 		return false;
 	}
-	if(r_sim < 0.5)
-	{
+	if(r_sim < 0.5){
 		printf("Fast change\n");
 		free(var);
 		t_answer.image.release();
@@ -1330,8 +1300,7 @@ bool Retrain(Mat frame, BoundingBox &position,
 		t_answer.nn_img.release();
 		return false;
 	}
-	if(isin_n != -1)
-	{
+	if(isin_n != -1){
 		printf("In negative model.\n");
 		free(var);
 		t_answer.image.release();
@@ -1597,12 +1566,8 @@ void nearestNeighbor(vector<BoundingBox> &positions, vector<double> &conf, int f
 					 float *similaridade_positiva_candidates, int *size_pos_cand,
 					 float *similaridade_negativa_candidates, int* size_neg_cand){
 	vector<Candidate>::iterator candidate;
-	if (DEBUG_CODIGO2)
-	{
+	if (DEBUG_CODIGO)
         std::cout<<"C++ nearestNeighbor - in Detector"<<std::endl;
-        std::cout<<"C++ nearestNeighbor - in Detector: object_model[0].size(): "<<object_model[0].size()<<" object_model[1].size(): "<< object_model[1].size()  <<std::endl;
-	}
-
 	int isin_p, isin_n; //ignorados
 	Mat view;
 	///NOTE: minhas alterações
@@ -1618,7 +1583,6 @@ void nearestNeighbor(vector<BoundingBox> &positions, vector<double> &conf, int f
 		cont_candidates++;
 	}
 
-    /// Verificar o NN_TEST, pois foi alterado no algoritmo para NN_TEST_P / N
 	candidates.erase(
 		remove_if(candidates.begin(), candidates.end(), [](Candidate c){return !NN_TEST(c.r_sim);}),
 		candidates.end()
@@ -1762,7 +1726,8 @@ bool Detect_part_2(Mat frame, vector<BoundingBox> &detector_positions, vector<do
 		printf("Detection: %.3lfs\n", elapsed);
 	}
 
-	if(detector_positions.empty()) return false;
+	if(detector_positions.empty())
+		return false;
 
 	return true;
 }
