@@ -632,7 +632,7 @@ void TLD_part_1(int *frame, float *array_bb_candidates, int *size_candidates,
 					bb_tracker[0] = tBB[0] + widthBB (tBB) / 2;
 					bb_tracker[1] = tBB[1] + heightBB(tBB) / 2;
 					bb_tracker[2] = widthBB (tBB);
-					bb_tracker[3] = heightBB(tBB);
+                    bb_tracker[3] = heightBB(tBB);
 
 					*size_bb_tracker = 4;
 				}

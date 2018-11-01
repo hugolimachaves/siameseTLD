@@ -25,7 +25,7 @@
 					<Add library="/usr/local/lib/libopencv_core.so" />
 					<Add library="/usr/local/lib/libopencv_highgui.so" />
 					<Add library="/usr/local/lib/libopencv_imgproc.so" />
-					<Add library="/home/hugo/Documents/Mestrado/codigoSiameseTLD/siameseTLD/TLD/vlfeat/vlfeat-0.9.21/bin/glnxa64/libvl.so" />
+					<Add library="/home/swhants/Documentos/GitHub/siameseTLD/TLD/vlfeat/vlfeat-0.9.21/bin/glnxa64/libvl.so" />
 					<Add library="/usr/local/lib/libopencv_legacy.so" />
 				</Linker>
 			</Target>

@@ -14,6 +14,7 @@ from parameters import configParams
 from ctypes import *
 from sklearn.neighbors import KNeighborsClassifier
 import random as rn
+import argparse
 
 
 DEBUG_TRACKER = False
@@ -22,7 +23,7 @@ MOSTRAR_OBJ_MODEL = False
 DEBUG_3 = False
 DIM_DESCRIPTOR = 256
 ONE_DIMENSION = 1
-ATOMIC_SIZE = 88
+ATOMIC_SIZE = 87
 SIZE_ARRAY = 32
 LAST_ADDED = -1
 SIZE_DESCRIPTOR = 256
@@ -42,18 +43,19 @@ OBJECT_MODEL_DISPLAY_SIZE_ONE_DIM = 50
 TOTAL_PIXEL_DISPLAY_OBJECT_MODEL_ONE_DIM = MAX_OBJECT_MODEL_ONE_DIM * OBJECT_MODEL_DISPLAY_SIZE_ONE_DIM
 
 
-tf.set_random_seed(1)
-#os.environ['PYTHONHASHSEED'] = '0'
-#rn.seed(12345)
-#np.random.seed(42)
+tf.set_random_seed(1) #os.environ['PYTHONHASHSEED'] = '0' #rn.seed(12345) #np.random.seed(42)
 
-
+parser = argparse.ArgumentParser()
+parser.add_argument("-v", "--video", required = False, help= "nome da pasta do video")
+args = parser.parse_args()
 
 NOME_VIDEO = 'bag'
 YML_FILE_NAME = 'parameters.yml'
-CAMINHO_EXEMPLO_VOT2015 = '/home/hugo/Documents/Mestrado/vot2015/' + NOME_VIDEO
+CAMINHO_EXEMPLO_VOT2015 = '/home/swhants/Documentos/vot2015/' + NOME_VIDEO
+CAMINHO_VOT2015 = '/home/swhants/Documentos/vot2015/'
 #CAMINHO_EXEMPLO_DATASET_TLD = '/home/hugo/Documents/Mestrado/codigoRastreador/dataset/exemplo/01-Light_video00001'
 PARAMETERS_PATH = os.path.join(CAMINHO_EXEMPLO_VOT2015,YML_FILE_NAME)
+listVideos = for i in os.listdir(CAMINHO_VOT2015) if 
 print('caminho do yml:',PARAMETERS_PATH)
 
 shared_library = CDLL('TLD/bin/Debug/libTLD.so')
@@ -970,7 +972,7 @@ def trackerEval(score, sx, targetPosition, window, opts):
 
 
 '''----------------------------------------main-----------------------------------------------------'''
-def main(_):
+def innerMain(_):
 	
 	print('run tracker...')
 	opts = configParams()
@@ -993,9 +995,16 @@ def main(_):
 	generated = Generation(opts,sn)
 	#generated.getDescriptor(coordenadasDaImagem,Image.open('download.jpeg'))
 	imgs, targetPosition, targetSize = loadVideoInfo(opts['seq_base_path'], opts['video'])
+	
+	print('targetPosition ', targetPosition)
+	print('targetSize ', targetSize)
+
+	bbTLD = convertYXWH2LTRB(list(targetPosition)+list(targetSize)) 
+	
 	nImgs = len(imgs)
 	imgs_pil =  [Image.fromarray(np.uint8(img)) for img in imgs]
 
+	print(args.video)
 		
 	im = imgs[POSICAO_PRIMEIRO_FRAME]
 	if(im.shape[-1] == 1):
@@ -1050,40 +1059,7 @@ def main(_):
 	
 
 
-	'''
-	
-	#[320,180,280,260], trump1
-	#[320,200,230,260], trump2
 
-
-	trump1 = Image.open('trump2.jpg')
-	trump2 = Image.open('trump1.jpg')
-	trump1Descr = generated.getDescriptor([320,180,280,260], trump1) #[240,320,480,640]
-	trump2Descr = generated.getDescriptor([320,180,280,260], trump2) # [320,240,640,480]
-	print('Descritor trump1: ',trump1Descr)
-	print('Descritor trump2: ',trump2Descr)
-	print('trump1 - trump2: ', detSimilarity(trump1Descr,trump2Descr))
-	#print((trump1Descr[0][0][0][0]))
-	#print((trump2Descr[0][0][0][0]))
-	print('convertSimilatiry: ', convertSimilatiry(detSimilarity(trump1Descr, trump2Descr)))
-	
-	trump1 = Image.open('trump1.jpg')
-	trump2 = Image.open('car.jpg')
-	trump1Descr = generated.getDescriptor([320,180,280,260], trump1) #[240,320,480,640]
-	trump2Descr = generated.getDescriptor([320,180,280,260], trump2) # [320,240,640,480]
-	print('Descritor trump1: ',trump1Descr)
-	print('Descritor trump2: ',trump2Descr)
-	print('trump1 - trump2: ', detSimilarity(trump1Descr,trump2Descr))
-	print((trump1Descr[0][0][0][0]))
-	print((trump2Descr[0][0][0][0]))
-	print('convertSimilatiry: ', convertSimilatiry(detSimilarity(trump1Descr, trump2Descr)))
-	teste = input('cancele isso por favor ')
-
-
-
-
-	#~nao faca isso em casa
-	'''
 
 	'''
 	Criando exibicao de object Model no opencv
@@ -1097,10 +1073,12 @@ def main(_):
 	visualizadorNegativo = Visualization(10, 50 , 'Visualizador Negativo', imgs)
 	#, size_subWindow,title, listFrames
 
+	ltrb_siamese = []
+	ltrb_TLD     = []
 	for frame in range(POSICAO_PRIMEIRO_FRAME, nImgs):
 		print('')
 		print(('Estamos no frame ' + str(frame+1)).center(80,'*'))
-		bbTLD = [0,0,1,1]
+
 		if frame > POSICAO_PRIMEIRO_FRAME:
 			im = imgs[frame]
 			if(im.shape[-1] == 1):
@@ -1122,15 +1100,25 @@ def main(_):
 			bbTLD = TLD_parte_2(generated, imgs_pil, frame+1)
 			print('negative obj model length: ', len(generalDescriptor.negative_obj_model_bb))
 			print('positive obj model length: ', len(generalDescriptor.positive_obj_model_bb))
-			visualizadorPositivo.refreshObjectModel(generalDescriptor.positive_obj_model_bb)
-			visualizadorNegativo.refreshObjectModel(generalDescriptor.negative_obj_model_bb)
+			print('aqui')
+			#visualizadorPositivo.refreshObjectModel(generalDescriptor.positive_obj_model_bb)
+			print('logo aqui')
+			#visualizadorNegativo.refreshObjectModel(generalDescriptor.negative_obj_model_bb)
 
 		else:
 			init_TLD_in_siameseFC(generated, imgs_pil, frame+1)
 			#pass
 		rectPosition = targetPosition-targetSize/2.
-		tl = tuple(np.round(rectPosition).astype(int)[::-1])
-		br = tuple(np.round(rectPosition+targetSize).astype(int)[::-1])
+		tl  = tuple(np.round(rectPosition).astype(int)[::-1])
+		br  = tuple(np.round(rectPosition+targetSize).astype(int)[::-1])
+		aux = [list(tl),list(br)]
+		aux = np.array(aux)
+		aux = aux.reshape(-1)
+		ltrb_siamese.append(list(aux))
+		ltrb_TLD.append(bbTLD)
+		print(ltrb_TLD)
+		print(ltrb_siamese)
+
 		imDraw = im.astype(np.uint8)
 		cv2.rectangle(imDraw, tl, br, (0, 255, 255), thickness=3)
 		try:
@@ -1161,6 +1149,17 @@ def addModel(generated, bb_list, bb_acumulated_atribute, feature_acumulated_atri
 	
 	return is_empty
 
+def convertYXWH2LTRB(yxwh):
+
+	ltrb =[]
+	ltrb.append(yxwh[1] - round(yxwh[2]/2) )
+	ltrb.append(yxwh[0] - round(yxwh[3]/2) )
+	ltrb.append(yxwh[1] + round(yxwh[2]/2) )
+	ltrb.append(yxwh[0] + round(yxwh[3]/2) )
+	return ltrb
+
+def _main():
+	innerMain(ATOMIC_SIZE)
+
 if __name__=='__main__':
-	tf.app.run()
-	
+	tf.app.run( main = _main(), argv=args  ) 

@@ -24,12 +24,12 @@
 #define FERN_MAX_OUTPUT	 100	 //Número maximo de amostras depois de passar pelo comitê
 
 //NN
-#define NN_LAMBDA			0.1	 //Margem de classificação
+#define NN_LAMBDA			0.1//0.1	 //Margem de classificação
 #define THE_SAME			0.95 //Acima dessa confiabilidade eh considerada a msma amostra
-#define NN_THETA 			0.55//0.6 //Margem do classificador 1NN
+#define NN_THETA 			0.45//0.6 //Margem do classificador 1NN
 
-#define NN_THETA_P          0.70
-#define NN_THETA_N          0.65
+#define NN_THETA_P          0.35 // #define NN_THETA_P          0.55
+#define NN_THETA_N          0.55  //#define NN_THETA_N          0.45
 
 #define NN_TEST_P(r_conf) (r_conf > NN_THETA_P)
 #define NN_TEST_N(r_conf) (r_conf > NN_THETA_N)
