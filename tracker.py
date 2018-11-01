@@ -49,7 +49,7 @@ tf.set_random_seed(1)
 
 
 
-NOME_VIDEO = 'racing'
+NOME_VIDEO = 'bag'
 YML_FILE_NAME = 'parameters.yml'
 CAMINHO_EXEMPLO_VOT2015 = '/home/hugo/Documents/Mestrado/vot2015/' + NOME_VIDEO
 #CAMINHO_EXEMPLO_DATASET_TLD = '/home/hugo/Documents/Mestrado/codigoRastreador/dataset/exemplo/01-Light_video00001'
@@ -1042,6 +1042,8 @@ def main(_):
 	zFeat = np.transpose(zFeat, [1, 2, 3, 0])
 	zFeatConstantOp = tf.constant(zFeat, dtype=tf.float32)
 	scoreOp = sn.buildInferenceNetwork(instanceOp, zFeatConstantOp, opts, isTrainingOp)
+
+	print("mapa de scores: ", scoreOp)
 	writer.add_graph(sess.graph)
 	resPath = os.path.join(opts['seq_base_path'], opts['video'], 'res')
 	bBoxes = np.zeros([nImgs, 4])
@@ -1112,6 +1114,7 @@ def main(_):
 			xCrops = makeScalePyramid(im, targetPosition, scaledInstance, opts['instanceSize'], avgChans, None, opts)
 			# sio.savemat('pyra.mat', {'xCrops': xCrops})
 			score = sess.run(scoreOp, feed_dict={instanceOp: xCrops})
+			print('xCrops: ',xCrops)
 			sio.savemat('score.mat', {'score': score})
 			newTargetPosition, newScale = trackerEval(score, round(sx), targetPosition, window, opts)
 			targetPosition = newTargetPosition
